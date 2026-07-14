@@ -1,30 +1,24 @@
-# Jumping from IPv4 to IPv6
+# IPv4 から IPv6 へのジャンプ
 
 [i[IPv6]]
 
-But I just want to know what to change in my code to get it going with
-IPv6! Tell me now!
+でもコードを IPv6 対応にするには何を変えればいいか、今すぐ知りたいんだろ？
 
-Ok! Ok!
+わかった！わかった！
 
-Almost everything in here is something I've gone over, above, but it's
-the short version for the impatient. (Of course, there is more than
-this, but this is what applies to the guide.)
+ここにあることのほとんどは、上ですでに説明した内容の短縮版だ——せっかちな人向けに。（もちろん他にもいろいろあるが、このガイドに当てはまるのはこれだ。）
 
-1. First of all, try to use [i[`getaddrinfo()` function]]
-   [`getaddrinfo()`](#structs) to get all the `struct sockaddr` info,
-   instead of packing the structures by hand. This will keep you IP
-   version-agnostic, and will eliminate many of the subsequent steps.
+1. まず、[i[`getaddrinfo()` function]]
+   [`getaddrinfo()`](#structs) を使って、手で構造体を詰める代わりに、
+   すべての `struct sockaddr` 情報を取得してみよう。これで IP バージョンに依存しないコードになり、後述のステップの多くが不要になる。
 
-2. Any place that you find you're hard-coding anything related to the IP
-   version, try to wrap up in a helper function.
+2. IP バージョンに関係するものをハードコードしている箇所があれば、ヘルパー関数にまとめてみよう。
 
-3. Change `AF_INET` to `AF_INET6`.
+3. `AF_INET` を `AF_INET6` に変更する。
 
-4. Change `PF_INET` to `PF_INET6`.
+4. `PF_INET` を `PF_INET6` に変更する。
 
-5. Change `INADDR_ANY` assignments to `in6addr_any` assignments, which
-   are slightly different:
+5. `INADDR_ANY` への代入を `in6addr_any` への代入に変更する。少し違う：
 
    ```{.c}
    struct sockaddr_in sa;
@@ -34,30 +28,25 @@ this, but this is what applies to the guide.)
    sa6.sin6_addr = in6addr_any; // use my IPv6 address
    ```
 
-   Also, the value `IN6ADDR_ANY_INIT` can be used as an initializer when
-   the `struct in6_addr` is declared, like so:
+   また、`struct in6_addr` を宣言するときの初期化子として `IN6ADDR_ANY_INIT` も使える：
 
    ```{.c}
    struct in6_addr ia6 = IN6ADDR_ANY_INIT;
    ```
 
-6. Instead of `struct sockaddr_in` use `struct sockaddr_in6`, being sure
-   to add "6" to the fields as appropriate (see [`struct`s](#structs),
-   above). There is no `sin6_zero` field.
+6. `struct sockaddr_in` の代わりに `struct sockaddr_in6` を使い、フィールド名には適宜「6」を付ける（上の [`struct`s](#structs) を参照）。`sin6_zero` フィールドはない。
 
-7. Instead of `struct in_addr` use `struct in6_addr`, being sure to add
-   "6" to the fields as appropriate (see [`struct`s](#structs), above).
+7. `struct in_addr` の代わりに `struct in6_addr` を使い、フィールド名には適宜「6」を付ける（上の [`struct`s](#structs) を参照）。
 
-8. Instead of `inet_aton()` or `inet_addr()`, use `inet_pton()`.
+8. `inet_aton()` や `inet_addr()` の代わりに `inet_pton()` を使う。
 
-9. Instead of `inet_ntoa()`, use `inet_ntop()`.
+9. `inet_ntoa()` の代わりに `inet_ntop()` を使う。
 
-10. Instead of `gethostbyname()`, use the superior `getaddrinfo()`.
+10. `gethostbyname()` の代わりに、より優れた `getaddrinfo()` を使う。
 
-11. Instead of `gethostbyaddr()`, use the superior [i[`getnameinfo()`
-    function]] `getnameinfo()` (although `gethostbyaddr()` can still
-    work with IPv6).
+11. `gethostbyaddr()` の代わりに、より優れた [i[`getnameinfo()`
+    function]] `getnameinfo()` を使う（`gethostbyaddr()` は IPv6 でも動くが）。
 
-12. `INADDR_BROADCAST` no longer works. Use IPv6 multicast instead.
+12. `INADDR_BROADCAST` はもう使えない。代わりに IPv6 マルチキャストを使う。
 
-_Et voilà_!
+できあがり！

@@ -1,47 +1,31 @@
-# Client-Server Background
+# クライアント・サーバーの背景
 
 [i[Client/Server]<]
 
-It's a client-server world, baby. Just about
-everything on the network deals with client processes talking to server
-processes and vice-versa. Take `telnet`, for instance. When you connect
-to a remote host on port 23 with telnet (the client), a program on that
-host (called `telnetd`, the server) springs to life. It handles the
-incoming telnet connection, sets you up with a login prompt, etc.
+世の中はクライアント・サーバーだ、ベイベー。ネットワーク上のほとんどすべてが、クライアントプロセスとサーバープロセスが互いに会話する形になっている。例えば `telnet` だ。telnet（クライアント）でリモートホストの 23 番ポートに接続すると、そのホスト上のプログラム（`telnetd`、サーバー）が起動する。入ってきた telnet 接続を処理し、ログインプロンプトを出してくれる、といった具合だ。
 
-![Client-Server Interaction.](cs.pdf "[Client-Server Interaction Diagram]")
+![クライアント・サーバー間のやりとり。](cs.pdf "[クライアント・サーバー相互作用図]")
 
-The exchange of information between client and server is summarized in
-the above diagram.
+クライアントとサーバー間の情報のやりとりは、上の図にまとめてある。
 
-Note that the client-server pair can speak `SOCK_STREAM`, `SOCK_DGRAM`,
-or anything else (as long as they're speaking the same thing). Some good
-examples of client-server pairs are `telnet`/`telnetd`, `ftp`/`ftpd`, or
-`Firefox`/`Apache`. Every time you use `ftp`, there's a remote program,
-`ftpd`, that serves you.
+クライアント・サーバーのペアは `SOCK_STREAM` でも `SOCK_DGRAM` でも何でも話せる（同じものを話していれば）。クライアント・サーバーペアの例としては `telnet`/`telnetd`、`ftp`/`ftpd`、`Firefox`/`Apache` などがある。`ftp` を使うたびに、あなたにサービスを提供するリモートプログラム `ftpd` がある。
 
-Often, there will only be one server on a machine, and that server will
-handle multiple clients using [i[`fork()` function]] `fork()`. The basic
-routine is: server will wait for a connection, `accept()` it, and
-`fork()` a child process to handle it. This is what our sample server
-does in the next section.
+多くの場合、1 台のマシンにはサーバーは 1 つだけで、[i[`fork()` function]] `fork()` を使って複数のクライアントを処理する。基本的な流れはこうだ：サーバーは接続を待ち、`accept()` し、処理用に子プロセスを `fork()` する。次のセクションのサンプルサーバーがまさにそうしている。
 
 
-## A Simple Stream Server
+## シンプルなストリームサーバー
 
 [i[Server-->stream]<]
 
-All this server does is send the string "`Hello, world!`" out over a
-stream connection. All you need to do to test this server is run it in
-one window, and telnet to it from another with:
+このサーバーがやることは、ストリーム接続越しに文字列 "`Hello, world!`" を送るだけだ。テストするには、あるウィンドウでサーバーを動かし、別のウィンドウから telnet すればいい：
 
 ```
 $ telnet remotehostname 3490
 ```
 
-where `remotehostname` is the name of the machine you're running it on.
+`remotehostname` はサーバーを動かしているマシン名だ。
 
-[flx[The server code|server.c]]:
+[flx[サーバーのコード|server.c]]:
 
 ```{.c .numberLines}
 /*
@@ -183,30 +167,21 @@ int main(void)
 }
 ```
 
-In case you're curious, I have the code in one big `main()` function for
-(I feel) syntactic clarity. Feel free to split it into smaller functions
-if it makes you feel better.
+気になる人のために言うと、構文のわかりやすさのため（と思う）コードは 1 つの大きな `main()` にまとめてある。気に入らなければ好きなように小さな関数に分割してくれ。
 
-(Also, this whole [i[`sigaction()` function]] `sigaction()` thing might
-be new to you---that's OK. The code that's there is responsible for
-reaping [i[Zombie process]] zombie processes that appear as the
-`fork()`ed child processes exit. If you make lots of zombies and don't
-reap them, your system administrator will become agitated.)
+（あと、この [i[`sigaction()` function]] `sigaction()` の話は初めてかも——大丈夫。ここにあるコードは、`fork()` した子プロセスが終了したときに現れる [i[Zombie process]] ゾンビプロセスを回収するためのものだ。ゾンビを大量に作って回収しないと、システム管理者が機嫌を悪くするぞ。）
 
-You can get the data from this server by using the client listed in the
-next section.
+このサーバーからデータを受け取るには、次のセクションのクライアントを使えばいい。
 
 [i[Server-->stream]>]
 
-## A Simple Stream Client
+## シンプルなストリームクライアント
 
 [i[Client-->stream]<]
 
-This guy's even easier than the server. All this client does is connect
-to the host you specify on the command line, port
-3490. It gets the string that the server sends.
+こっちはサーバーよりさらに簡単だ。このクライアントがやることは、コマンドラインで指定したホストの 3490 番ポートに接続し、サーバーが送ってくる文字列を受け取るだけだ。
 
-[flx[The client source|client.c]]:
+[flx[クライアントのソース|client.c]]:
 
 ```{.c .numberLines}
 /*
@@ -310,34 +285,21 @@ int main(int argc, char *argv[])
 }
 ```
 
-Notice that if you don't run the server before you run the client,
-`connect()` returns [i[Connection refused]] "Connection refused". Very
-useful.
+サーバーを動かす前にクライアントを実行すると、`connect()` は [i[Connection refused]] "Connection refused" を返す。とても便利だ。
 
 [i[Client-->stream]>]
 
-## Datagram Sockets {#datagram}
+## データグラムソケット {#datagram}
 
 [i[Server-->datagram]<]
 
-We've already covered the basics of UDP datagram sockets with our
-discussion of `sendto()` and `recvfrom()`, above, so I'll just present a
-couple of sample programs: `talker.c` and `listener.c`.
+`sendto()` と `recvfrom()` の説明で UDP データグラムソケットの基本はすでに触れたので、ここではサンプルプログラム `talker.c` と `listener.c` を 2 つ提示するだけにする。
 
-`listener` sits on a machine waiting for an incoming packet on port
-4950. `talker` sends a packet to that port, on the specified machine,
-that contains whatever the user enters on the command line.
+`listener` はマシン上で 4950 番ポートへの着信パケットを待ち、`talker` は指定マシンのそのポートに、コマンドラインでユーザーが入力した内容を含むパケットを送る。
 
-Because datagram sockets are connectionless and just fire packets off
-into the ether with callous disregard for success, we are going to tell
-the client and server to use specifically IPv6. This way we avoid the
-situation where the server is listening on IPv6 and the client sends on
-IPv4; the data simply would not be received. (In our connected TCP
-stream sockets world, we might still have the mismatch, but the error on
-`connect()` for one address family would cause us to retry for the
-other.)
+データグラムソケットはコネクションレスで、成功するかどうか気にせずパケットを宇宙に放り投げるので、クライアントとサーバーには明示的に IPv6 を使わせる。こうすれば、サーバーが IPv6 で待ち受けているのにクライアントが IPv4 で送る、という不一致を避けられる（データは届かない）。接続型 TCP ストリームソケットの世界では不一致があっても、`connect()` のエラーで別のアドレスファミリーを再試行できる。
 
-Here is the [flx[source for `listener.c`|listener.c]]:
+[flx[`listener.c` のソース|listener.c]] は次のとおり：
 
 ```{.c .numberLines}
 /*
@@ -437,16 +399,13 @@ int main(void)
 }
 ```
 
-Notice that in our call to `getaddrinfo()` we're finally using
-`SOCK_DGRAM`.  Also, note that there's no need to `listen()` or
-`accept()`. This is one of the perks of using unconnected datagram
-sockets!
+`getaddrinfo()` の呼び出しで、ついに `SOCK_DGRAM` を使っていることに注目。`listen()` や `accept()` も不要だ。非接続データグラムソケットの利点のひとつだ！
 
 [i[Server-->datagram]>]
 
 [i[Client-->datagram]<]
 
-Next comes the [flx[source for `talker.c`|talker.c]]:
+次は [flx[`talker.c` のソース|talker.c]]：
 
 ```{.c .numberLines}
 /*
@@ -519,25 +478,12 @@ int main(int argc, char *argv[])
 }
 ```
 
-And that's all there is to it! Run `listener` on some machine, then run
-`talker` on another. Watch them communicate! Fun G-rated excitement for
-the entire nuclear family!
+以上、それだけだ！あるマシンで `listener` を動かし、別のマシンで `talker` を実行しよう。通信するのを見て楽しんでくれ！核家族全員で楽しめる G 指定の興奮だ！
 
-You don't even have to run the server this time! You can run `talker` by
-itself, and it just happily fires packets off into the ether where they
-disappear if no one is ready with a `recvfrom()` on the other side.
-Remember: data sent using UDP datagram sockets isn't guaranteed to
-arrive!
+今回はサーバーを動かす必要もない！`talker` だけ実行しても、向こう側に `recvfrom()` で待ち受けている相手がいなければ、パケットはどこかへ消えていくだけだ。覚えておいて：UDP データグラムソケットで送ったデータは届く保証がない！
 
 [i[Client-->datagram]>]
 
-Except for one more tiny detail that I've mentioned many times in the
-past: [i[`connect()` function-->on datagram sockets]] connected datagram
-sockets. I need to talk about this here, since we're in the datagram
-section of the document. Let's say that `talker` calls `connect()` and
-specifies the `listener`'s address. From that point on, `talker` may
-only send to and receive from the address specified by `connect()`. For
-this reason, you don't have to use `sendto()` and `recvfrom()`; you can
-simply use `send()` and `recv()`.
+過去何度も触れてきた、もう 1 つの小さな詳細を除けば——[i[`connect()` function-->on datagram sockets]] 接続型データグラムソケットだ。ドキュメントのデータグラムの章なので、ここで話しておく。`talker` が `connect()` を呼び、`listener` のアドレスを指定したとする。その時点から `talker` は `connect()` で指定したアドレスとのみ送受信できる。だから `sendto()` と `recvfrom()` を使う必要はなく、単に `send()` と `recv()` だけでいい。
 
 [i[Client/Server]>]

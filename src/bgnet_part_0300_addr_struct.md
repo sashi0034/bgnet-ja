@@ -1,88 +1,48 @@
-# IP Addresses, `struct`s, and Data Munging
+# IP アドレス、`struct`、データ操作
 
-Here's the part of the game where we get to talk code for a change.
+ここからはコードの話をします。
 
-But first, let's discuss more non-code! Yay! First I want to talk about
-[i[IP address]] IP addresses and ports for just a tad so we have that
-sorted out.  Then we'll talk about how the sockets API stores and
-manipulates IP addresses and other data.
+その前に、もう少しコード以外の話！ まず [i[IP address]] IP アドレスとポートについて少し整理しておきましょう。それから、ソケット API が IP アドレスなどのデータをどう保持・操作するか話します。
 
 
-## IP Addresses, versions 4 and 6
+## IP アドレス、バージョン 4 と 6
 
-In the good old days back when Ben Kenobi was still called Obi Wan
-Kenobi, there was a wonderful network routing system called The Internet
-Protocol Version 4, also called [i[IPv4]] IPv4. It had addresses made up
-of four bytes (A.K.A.  four "octets"), and was commonly written in "dots
-and numbers" form, like so: `192.0.2.111`.
+昔、ベン・ケノービがまだオビ＝ワン・ケノービと呼ばれていた頃、素晴らしいルーティング方式 The Internet Protocol Version 4、通称 [i[IPv4]] IPv4 がありました。アドレスは 4 バイト（別名 4「オクテット」）で、よく「ドット区切りの数字」形式で書きます：`192.0.2.111`。
 
-You've probably seen it around.
+どこかで見たことがあるでしょう。
 
-In fact, as of this writing, virtually every site on the Internet uses
-IPv4.
+実際、この執筆時点では、インターネット上のほぼすべてのサイトが IPv4 を使っています。
 
-Everyone, including Obi Wan, was happy. Things were great, until some
-naysayer by the name of Vint Cerf warned everyone that we were about to
-run out of IPv4 addresses!
+オビ＝ワンを含め皆幸せでした。素晴らしい時代——[i[Vint Cerf]] ヴィント・サーフという懐疑論者が IPv4 アドレスが尽きると警告するまで！
 
-(Besides warning everyone of the Coming IPv4 Apocalypse Of Doom And
-Gloom, [i[Vint Cerf]] [flw[Vint Cerf|Vint_Cerf]] is also well-known for
-being The Father Of The Internet. So I really am in no position to
-second-guess his judgment.)
+（IPv4 終末の到来を警告したことに加え、[i[Vint Cerf]] [flw[Vint Cerf|Vint_Cerf]] はインターネットの父としても有名です。彼の判断に疑問を挟む立場にはいません。）
 
-Run out of addresses? How could this be? I mean, there are like billions
-of IP addresses in a 32-bit IPv4 address. Do we really have billions of
-computers out there?
+アドレスが尽きる？ 32 ビット IPv4 には数十億の IP アドレスがあるのに、本当に数十億台のコンピュータがあるのか？
 
-Yes.
+はい。
 
-Also, in the beginning, when there were only a few computers and
-everyone thought a billion was an impossibly large number, some big
-organizations were generously allocated millions of IP addresses for
-their own use. (Such as Xerox, MIT, Ford, HP, IBM, GE, AT&T, and some
-little company called Apple, to name a few.)
+また、当初はコンピュータが少数で、10 億はとてつもなく大きな数字だと思われていた頃、大組織には数百万の IP アドレスが惜しみなく割り当てられました（Xerox、MIT、Ford、HP、IBM、GE、AT&T、Apple など）。
 
-In fact, if it weren't for several stopgap measures, we would have run
-out a long time ago.
+実際、いくつかの暫定策がなければ、とっくに尽きていたでしょう。
 
-But now we're living in an era where we're talking about every human
-having an IP address, every computer, every calculator, every phone,
-every parking meter, and (why not) every puppy dog, as well.
+今は、人間一人ひとり、コンピュータ、電卓、電話、パーキングメーター、（なぜなら）子犬まで、すべてに IP アドレスを持たせる時代です。
 
-And so, [i[IPv6]] IPv6 was born. Since Vint Cerf is probably immortal
-(even if his physical form should pass on, heaven forbid, he is probably
-already existing as some kind of hyper-intelligent [flw[ELIZA|ELIZA]]
-program out in the depths of the Internet2), no one wants to have to
-hear him say again "I told you so" if we don't have enough addresses in
-the next version of the Internet Protocol.
+そこで [i[IPv6]] IPv6 が生まれました。ヴィント・サーフはたぶん不死（たとえ肉体が逝っても、Internet2 の深みで超知能 [flw[ELIZA|ELIZA]]
+プログラムとして存在しているかもしれません）なので、次の Internet Protocol でアドレスが足りなければ再び「言ったでしょ」と言われるのは誰も望みません。
 
-What does this suggest to you?
+これから何が想像できますか？
 
-That we need a _lot_ more addresses. That we need not just twice as many
-addresses, not a billion times as many, not a thousand trillion times as
-many, but _79 MILLION BILLION TRILLION times as many possible
-addresses!_  That'll show 'em!
+もっと _たくさん_ アドレスが必要だ、ということ。2 倍でも、10 億倍でも、1000 兆倍でもなく、_7900 万×10 億×1 兆倍_ のアドレス空間が必要だ！ 見せてやる！
 
-You're saying, "Beej, is that true? I have every reason to disbelieve
-large numbers."  Well, the difference between 32 bits and 128 bits might
-not sound like a lot; it's only 96 more bits, right? But remember, we're
-talking powers here: 32 bits represents some 4 billion numbers (2^32^),
-while 128 bits represents about 340 trillion trillion trillion numbers
-(for real, 2^128^).  That's like a million IPv4 Internets for _every
-single star in the Universe_.
+「Beej、本当？ 大きな数字は疑いたくなるんだけど」と言うでしょう。32 ビットと 128 ビットの差は 96 ビット増えただけに聞こえるかもしれません。でも、ここでは累乗の話です：32 ビットは約 40 億（2^32^）、128 ビットは約 340 穰×穰×穰（本当に 2^128^）です。宇宙の _星 1 つにつき_ 100 万個の IPv4 インターネット分です。
 
-Forget this dots-and-numbers look of IPv4, too; now we've got a
-hexadecimal representation, with each two-byte chunk separated by a
-colon, like this:
+IPv4 のドット区切りも忘れてください。今は 16 進表記で、2 バイトごとにコロンで区切ります：
 
 ``` {.default}
 2001:0db8:c9d2:aee5:73e3:934a:a5ae:9551
 ```
 
-That's not all! Lots of times, you'll have an IP address with lots of
-zeros in it, and you can compress them between two colons. And you can
-leave off leading zeros for each byte pair. For instance, each of these
-pairs of addresses are equivalent:
+それだけではありません！ ゼロだらけのアドレスは 2 つのコロンの間で圧縮できます。各バイトペアの先頭ゼロも省略できます。例えば次の各ペアは等価です：
 
 ``` {.default}
 2001:0db8:c9d2:0012:0000:0000:0000:0051
@@ -95,211 +55,108 @@ pairs of addresses are equivalent:
 ::1
 ```
 
-The address `::1` is the _loopback address_. It always means "this
-machine I'm running on now". In IPv4, the loopback address is
-`127.0.0.1`.
+アドレス `::1` は _ループバックアドレス_ です。常に「今動いているこのマシン」を意味します。IPv4 では `127.0.0.1` です。
 
-Finally, there's an IPv4-compatibility mode for IPv6 addresses that you
-might come across. If you want, for example, to represent the IPv4
-address `192.0.2.33` as an IPv6 address, you use the following notation:
-"`::ffff:192.0.2.33`".
+最後に、IPv6 アドレスの IPv4 互換表記に出会うことがあります。例えば IPv4 アドレス `192.0.2.33` を IPv6 で表すなら「`::ffff:192.0.2.33`」です。
 
-We're talking serious fun.
+本気の楽しさです。
 
-In fact, it's such serious fun, that the Creators of IPv6 have quite
-cavalierly lopped off trillions and trillions of addresses for reserved
-use, but we have so many, frankly, who's even counting anymore? There
-are plenty left over for every man, woman, child, puppy, and parking
-meter on every planet in the galaxy.  And believe me, every planet in
-the galaxy has parking meters. You know it's true.
+実に本気すぎて、IPv6 の創設者たちは何穰も何穰ものアドレスを予約用途に切り捨てましたが、まだ十分あります。銀河のすべての惑星の、すべての人、子犬、パーキングメーターに足りるほど。銀河のすべての惑星にパーキングメーターがあるのは、知っている通りです。
 
 
-### Subnets
+### サブネット
 
-For organizational reasons, it's sometimes convenient to declare that
-"this first part of this IP address up through this bit is the _network
-portion_ of the IP address, and the remainder is the _host portion_.
+管理上、IP アドレスの「このビットまでが _ネットワーク部_、残りが _ホスト部_」と決めることが便利な場合があります。
 
-For instance, with IPv4, you might have `192.0.2.12`, and we could say
-that the first three bytes are the network and the last byte was the
-host. Or, put another way, we're talking about host `12` on network
-`192.0.2.0` (see how we zero out the byte that was the host).
+例えば IPv4 で `192.0.2.12` があり、最初の 3 バイトがネットワーク、最後の 1 バイトがホスト、と言えます。別の言い方では、ネットワーク `192.0.2.0` のホスト `12` です（ホストだったバイトをゼロにした形）。
 
-And now for more outdated information! Ready? In the Ancient Times,
-there were "classes" of subnets, where the first one, two, or three
-bytes of the address was the network part. If you were lucky enough to
-have one byte for the network and three for the host, you could have 24
-bits-worth of hosts on your network (16 million or so). That was a
-"Class A" network. On the opposite end was a "Class C", with three bytes
-of network, and one byte of host (256 hosts, minus a couple that were
-reserved).
+さらに古い話です！ 準備はいい？ 太古にはアドレスの最初の 1、2、3 バイトがネットワーク部だった「クラス」がありました。ネットワーク 1 バイト・ホスト 3 バイトなら、24 ビット分（約 1600 万）のホストを載せられました。これが「クラス A」ネットワーク。反対端はネットワーク 3 バイト・ホスト 1 バイトの「クラス C」（256 ホスト、うち数個は予約）。
 
-So as you can see, there were just a few Class As, a huge pile of Class
-Cs, and some Class Bs in the middle.
+ご覧の通り、クラス A は少数、クラス C は大量、クラス B がその中間でした。
 
-The network portion of the IP address is described by something called
-the _netmask_, which you bitwise-AND with the IP address to get the
-network number out of it. The netmask usually looks something like
-`255.255.255.0`. (E.g.  with that netmask, if your IP is `192.0.2.12`,
-then your network is `192.0.2.12` AND `255.255.255.0` which gives
-`192.0.2.0`.)
+IP アドレスのネットワーク部は _ネットマスク_ で表し、IP アドレスとビット単位 AND してネットワーク番号を取り出します。ネットマスクは `255.255.255.0` のような形が多いです。（例：そのネットマスクで IP が `192.0.2.12` なら、ネットワークは `192.0.2.12` AND `255.255.255.0` で `192.0.2.0`。）
 
-Unfortunately, it turned out that this wasn't fine-grained enough for
-the eventual needs of the Internet; we were running out of Class C
-networks quite quickly, and we were most definitely out of Class As, so
-don't even bother to ask. To remedy this, The Powers That Be allowed for
-the netmask to be an arbitrary number of bits, not just 8, 16, or 24. So
-you might have a netmask of, say `255.255.255.252`, which is 30 bits of
-network, and 2 bits of host allowing for four hosts on the network.
-(Note that the netmask is _ALWAYS_ a bunch of 1-bits followed by a bunch
-of 0-bits.)
+残念ながら、インターネットの需要には粗すぎました。クラス C ネットワークが急速に尽き、クラス A はとっくにないので、聞かないでください。対策として、ネットマスクは 8、16、24 ビットに限らず任意のビット数にできました。例えば `255.255.255.252` はネットワーク 30 ビット・ホスト 2 ビットで、4 ホストのネットワークです。（ネットマスクは _常に_ 1 の連続のあと 0 の連続です。）
 
-But it's a bit unwieldy to use a big string of numbers like
-`255.192.0.0` as a netmask. First of all, people don't have an intuitive
-idea of how many bits that is, and secondly, it's really not compact. So
-the New Style came along, and it's much nicer. You just put a slash
-after the IP address, and then follow that by the number of network bits
-in decimal. Like this: `192.0.2.12/30`.
+`255.192.0.0` のような長い数字列は扱いにくいです。何ビットか直感がわかないし、コンパクトでもありません。そこで新しい書き方：IP アドレスの後にスラッシュとネットワークビット数（10 進）を付けます。例：`192.0.2.12/30`。
 
-Or, for IPv6, something like this: `2001:db8::/32` or
-`2001:db8:5413:4028::9db9/64`.
+IPv6 なら `2001:db8::/32` や `2001:db8:5413:4028::9db9/64` などです。
 
 
-### Port Numbers
+### ポート番号
 
-If you'll kindly remember, I presented you earlier with the [Layered
-Network Model](#lowlevel) which had the Internet Layer (IP) split off
-from the Host-to-Host Transport Layer (TCP and UDP). Get up to speed on
-that before the next paragraph.
+覚えているでしょう、先に [レイヤード・ネットワーク・モデル](#lowlevel) で Internet Layer（IP）と Host-to-Host Transport Layer（TCP と UDP）が分かれている、と述べました。次の段落に進む前に復習しておいてください。
 
-Turns out that besides an IP address (used by the IP layer), there is
-another address that is used by TCP (stream sockets) and,
-coincidentally, by UDP (datagram sockets). It is the _port number_. It's
-a 16-bit number that's like the local address for the connection.
+IP アドレス（IP 層が使う）に加え、TCP（ストリームソケット）と、偶然にも UDP（データグラムソケット）が使う _もう 1 つのアドレス_ があります。_ポート番号_ です。接続のローカルアドレスのような 16 ビットの番号です。
 
-Think of the IP address as the street address of a hotel, and the port
-number as the room number. That's a decent analogy; maybe later I'll
-come up with one involving the automobile industry.
+IP アドレスをホテルの住所、ポート番号を部屋番号と考えてください。まあまあの比喩です。後で自動車業界版を考えるかもしれません。
 
-Say you want to have a computer that handles incoming mail AND web
-services---how do you differentiate between the two on a computer with a
-single IP address?
+1 つの IP アドレスのマシンで、受信メールと Web の両方を扱うには、どう区別する？
 
-Well, different services on the Internet have different well-known port
-numbers.  You can see them all in [fl[the Big IANA Port
-List|https://www.iana.org/assignments/port-numbers]] or, if you're on a
-Unix box, in your `/etc/services` file. HTTP (the web) is port 80,
-telnet is port 23, SMTP is port 25, the game
-[fl[DOOM|https://en.wikipedia.org/wiki/Doom_%281993_video_game%29]] used
-port 666, etc. and so on. Ports under 1024 are often considered special,
-and usually require special OS privileges to use.
+インターネット上のサービスにはそれぞれ well-known なポート番号があります。[fl[IANA の巨大ポート
+リスト|https://www.iana.org/assignments/port-numbers]] や、Unix なら `/etc/services` で一覧できます。HTTP（Web）は 80、telnet は 23、SMTP は 25、ゲーム [fl[DOOM|https://en.wikipedia.org/wiki/Doom_%281993_video_game%29]] は 666 など。1024 未満のポートは特別扱いで、多くの OS では特権が必要です。
 
-And that's about it!
+以上、だいたいこんなところです！
 
 
-## Byte Order
+## バイト順
 
-[i[Byte ordering]] By Order of the Realm! There shall be two byte
-orderings, hereafter to be known as Lame and Magnificent!
+[i[Byte ordering]] 王国の命令により！ バイト順は 2 種類——以降、凡庸と崇高と呼ぶ！
 
-I joke, but one really is better than the other. `:-)`
+冗談ですが、一方は本当にもう一方より優れています。`:-)`
 
-There really is no easy way to say this, so I'll just blurt it out: your
-computer might have been storing bytes in reverse order behind your
-back. I know! No one wanted to have to tell you.
+はっきり言うと、コンピュータがこっそりバイトを逆順で格納している _かもしれません_。知らなかったでしょう。
 
-The thing is, everyone in the Internet world has generally agreed that
-if you want to represent the two-byte hex number, say `b34f`, you'll
-store it in two sequential bytes `b3` followed by `4f`. Makes sense,
-and, as [fl[Wilford
-Brimley|https://en.wikipedia.org/wiki/Wilford_Brimley]] would tell you,
-it's the Right Thing To Do. This number, stored with the big end first,
-is called _Big-Endian_.
+インターネット界では、2 バイトの 16 進数 `b34f` を表すなら、連続 2 バイト `b3` のあと `4f` で格納することに概ね合意しています。理にかなっていますし、[fl[Wilford
+Brimley|https://en.wikipedia.org/wiki/Wilford_Brimley]] なら Right Thing To Do と言うでしょう。この big end 先の格納を _ビッグエンディアン_ と呼びます。
 
-Unfortunately, a _few_ computers scattered here and there throughout the
-world, namely anything with an Intel or Intel-compatible processor,
-store the bytes reversed, so `b34f` would be stored in memory as the
-sequential bytes `4f` followed by `b3`. This storage method is called
-_Little-Endian_.
+残念ながら、世界に散在する _少数_ のコンピュータ——Intel または Intel 互換プロセッサ搭載機——はバイトを逆に格納し、`b34f` は `4f` のあと `b3` になります。これを _リトルエンディアン_ と呼びます。
 
-But wait, I'm not done with terminology yet! The more-sane _Big-Endian_
-is also called _Network Byte Order_ because that's the order us network
-types like.
+用語はまだ続きます！ よりまともな _ビッグエンディアン_ は、ネットワーク関係者が好むので _ネットワーク・バイト順_ とも呼ばれます。
 
-Your computer stores numbers in _Host Byte Order_. If it's an Intel
-80x86, Host Byte Order is Little-Endian. If it's a Motorola 68k, Host
-Byte Order is Big-Endian. If it's a PowerPC, Host Byte Order is... well,
-it depends!
+コンピュータは _ホスト・バイト順_ で数値を格納します。Intel 80x86 ならホスト・バイト順はリトルエンディアン。Motorola 68k ならビッグエンディアン。PowerPC なら……機種による！
 
-A lot of times when you're building packets or filling out data
-structures you'll need to make sure your two- and four-byte numbers are
-in Network Byte Order. But how can you do this if you don't know the
-native Host Byte Order?
+パケット組み立てやデータ構造の充填では、2 バイト・4 バイトの数値をネットワーク・バイト順にする必要がよくあります。ホスト・バイト順がわからなくても？
 
-Good news! You just get to assume the Host Byte Order isn't right, and
-you always run the value through a function to set it to Network Byte
-Order. The function will do the magic conversion if it has to, and this
-way your code is portable to machines of differing endianness.
+朗報！ ホスト・バイト順は正しくないと仮定し、常にネットワーク・バイト順に変換する関数を通せばよいのです。必要なら変換してくれるので、エンディアンの異なるマシン間でも移植性が保てます。
 
-All righty. There are two types of numbers that you can convert: `short`
-(two bytes) and `long` (four bytes). These functions work for the
-`unsigned` variations as well. Say you want to convert a `short` from
-Host Byte Order to Network Byte Order. Start with "h" for "host", follow
-it with "to", then "n" for "network", and "s" for "short": h-to-n-s, or
-`htons()` (read: "Host to Network Short").
+さて、変換できる型は `short`（2 バイト）と `long`（4 バイト）の 2 種類です。`unsigned` 版にも使えます。例：`short` をホスト・バイト順からネットワーク・バイト順へ。「h」= host、「to」、「n」= network、「s」= short：h-to-n-s、つまり `htons()`（「Host to Network Short」と読む）。
 
-It's almost too easy...
+簡単すぎる……
 
-You can use every combination of "n", "h", "s", and "l" you want, not
-counting the really stupid ones. For example, there is NOT a `stolh()`
-("Short to Long Host") function---not at this party, anyway. But there
-are:
+「n」「h」「s」「l」の組み合わせは、本当に愚かなものを除けば使えます。例えば `stolh()`（「Short to Long Host」）は _ない_ —— このパーティでは。あるのは：
 
 [[book-pagebreak]]
 
-| Function  | Description                   |
+| 関数  | 説明                   |
 |-----------|-------------------------------|
 | [i[`htons()` function]]`htons()` | `h`ost `to` `n`etwork `s`hort |
 | [i[`htonl()` function]]`htonl()` | `h`ost `to` `n`etwork `l`ong  |
 | [i[`ntohs()` function]]`ntohs()` | `n`etwork `to` `h`ost `s`hort |
 | [i[`ntohl()` function]]`ntohl()` | `n`etwork `to` `h`ost `l`ong  |
 
-Basically, you'll want to convert the numbers to Network Byte Order
-before they go out on the wire, and convert them to Host Byte Order as
-they come in off the wire.
+基本的に、送る前にネットワーク・バイト順へ、受け取ったらホスト・バイト順へ変換します。
 
-There are no standard 64-bit variants in the sockets API, but I talk
-about other options in the [`htons()` reference page](#htonsman). And if
-you want to do floating point, check out the section on
-[Serialization](#serialization), far below.
+ソケット API に標準の 64 ビット版はありませんが、[`htons()` リファレンスページ](#htonsman) で他の選択肢に触れます。浮動小数点なら下の [Serialization](#serialization) 節を参照。
 
-Assume the numbers in this document are in Host Byte Order unless I say
-otherwise.
+特に断りがない限り、この文書の数値はホスト・バイト順とします。
 
 
-## `struct`s {#structs}
+## `struct` {#structs}
 
-Well, we're finally here. It's time to talk about programming. In this
-section, I'll cover various data types used by the sockets interface,
-since some of them are a real bear to figure out.
+ようやくここまで来ました。プログラミングの話です。この節ではソケットインターフェースの各種データ型を扱います。いくつかは本当にわかりにくいです。
 
-First the easy one: a [i[Socket descriptor]] socket descriptor. A socket
-descriptor is the following type:
+まず簡単なもの：[i[Socket descriptor]] ソケット記述子。型は次のとおり：
 
 ```{.c}
 int
 ```
 
-Just a regular `int`.
+普通の `int` です。
 
-Things get weird from here, so just read through and bear with me.
+ここから変わってきます。読み進めてください。
 
-My First Struct™---`struct addrinfo`. [i[`struct addrinfo` type]] This
-structure is a more recent invention, and is used to prep the socket
-address structures for subsequent use. It's also used in host name
-lookups, and service name lookups. That'll make more sense later when we
-get to actual usage, but just know for now that it's one of the first
-things you'll call when making a connection.
+My First Struct™——`struct addrinfo`。[i[`struct addrinfo` type]] 比較的新しい構造体で、後続のソケットアドレス構造体の準備に使います。ホスト名・サービス名のルックアップにも使います。実際の使用例で理解が深まりますが、接続を張るとき最初に呼ぶものの 1 つ、と覚えておいてください。
 
 ```{.c}
 struct addrinfo {
@@ -315,39 +172,22 @@ struct addrinfo {
 };
 ```
 
-You'll load this struct up a bit, and then call [i[`getaddrinfo()`
-function]] `getaddrinfo()`. It'll return a pointer to a new linked list
-of these structures filled out with all the goodies you need.
+この struct を少し埋めて [i[`getaddrinfo()`
+function]] `getaddrinfo()` を呼びます。必要な情報が入った新しい連結リストへのポインタが返ります。
 
-You can force it to use IPv4 or IPv6 in the `ai_family` field, or leave
-it as `AF_UNSPEC` to use whatever. This is cool because your code can be
-IP version-agnostic.
+`ai_family` で IPv4 または IPv6 を強制できます。`AF_UNSPEC` のままならどちらでも。IP バージョンに依存しないコードが書けて便利です。
 
-Note that this is a linked list: `ai_next` points at the next
-element---there could be several results for you to choose from. I'd use
-the first result that worked, but you might have different business
-needs; I don't know everything, man!
+連結リストであることに注意：`ai_next` が次の要素——選択肢が複数ある場合があります。動いた最初の結果を使うのが普通ですが、要件は人それぞれ。全部は知りません！
 
-You'll see that the `ai_addr` field in the `struct addrinfo` is a
-pointer to a [i[`struct sockaddr` type]] `struct sockaddr`. This is
-where we start getting into the nitty-gritty details of what's inside an
-IP address structure.
+`struct addrinfo` の `ai_addr` は [i[`struct sockaddr` type]] `struct sockaddr` へのポインタです。IP アドレス構造体の中身の詳細に入るところです。
 
-You might not usually need to write to these structures; oftentimes, a
-call to `getaddrinfo()` to fill out your `struct addrinfo` for you is
-all you'll need.  You _will_, however, have to peer inside these
-`struct`s to get the values out, so I'm presenting them here.
+これらの構造体に書き込む必要は通常ありません。`getaddrinfo()` で `struct addrinfo` を埋めてもらうだけで足りることが多いです。ただし値を取り出すには中を覗く必要があるので、ここで紹介します。
 
-(Also, all the code written before `struct addrinfo` was invented we
-packed all this stuff by hand, so you'll see a lot of IPv4 code out in
-the wild that does exactly that. You know, in old versions of this guide
-and so on.)
+（`struct addrinfo` 以前のコードは手作業で詰めていたので、IPv4 コードが世の中に大量に残っています。このガイドの旧版など。）
 
-Some `struct`s are IPv4, some are IPv6, and some are both. I'll make
-notes of which are what.
+`struct` には IPv4 専用、IPv6 専用、両方対応があります。どれがどれか注記します。
 
-Anyway, the `struct sockaddr` holds socket address information for many
-types of sockets.
+とにかく `struct sockaddr` は多種のソケットアドレス情報を保持します。
 
 ```{.c}
 struct sockaddr {
@@ -356,20 +196,12 @@ struct sockaddr {
 }; 
 ```
 
-`sa_family` can be a variety of things, but it'll be [i[`AF_INET`
-macro]] `AF_INET` (IPv4) or [i[`AF_INET6` macro]] `AF_INET6` (IPv6) for
-everything we do in this document. `sa_data` contains a destination
-address and port number for the socket. This is rather unwieldy since
-you don't want to tediously pack the address in the `sa_data` by hand.
+`sa_family` はいろいろあり得ますが、この文書では [i[`AF_INET`
+macro]] `AF_INET`（IPv4）か [i[`AF_INET6` macro]] `AF_INET6`（IPv6）です。`sa_data` に宛先アドレスとポート番号があります。手で `sa_data` に詰めるのは面倒なので、
 
-To deal with `struct sockaddr`, programmers created a parallel
-structure: [i[`struct sockaddr` type]] `struct sockaddr_in` ("in" for
-"Internet") to be used with IPv4.
+`struct sockaddr` 向けに並行構造体が作られました：[i[`struct sockaddr` type]] `struct sockaddr_in`（「in」= Internet）、IPv4 用です。
 
-And _this is the important_ bit: a pointer to a `struct sockaddr_in` can
-be cast to a pointer to a `struct sockaddr` and vice-versa. So even
-though `connect()` wants a `struct sockaddr*`, you can still use a
-`struct sockaddr_in` and cast it at the last minute!
+_重要な_ 点：`struct sockaddr_in` へのポインタは `struct sockaddr` へのポインタにキャストでき、その逆も可能です。`connect()` は `struct sockaddr*` を欲しますが、最後にキャストすれば `struct sockaddr_in` を使えます！
 
 ```{.c}
 // (IPv4 only--see struct sockaddr_in6 for IPv6)
@@ -382,17 +214,9 @@ struct sockaddr_in {
 };
 ```
 
-This structure makes it easy to reference elements of the socket
-address. Note that `sin_zero` (which is included to pad the structure to
-the length of a `struct sockaddr`) should be set to all zeros with the
-function `memset()`.  Also, notice that `sin_family` corresponds to
-`sa_family` in a `struct sockaddr` and should be set to "`AF_INET`".
-Finally, the `sin_port` must be in [i[Byte ordering]] _Network Byte
-Order_ (by using [i[`htons()` function]] `htons()`!)
+ソケットアドレスの各要素を参照しやすい構造です。`sin_zero`（`struct sockaddr` と同じ長さにするパディング）は `memset()` でゼロにします。`sin_family` は `struct sockaddr` の `sa_family` に対応し、`AF_INET` に設定します。`sin_port` は [i[Byte ordering]] _ネットワーク・バイト順_（[i[`htons()` function]] `htons()` を使う！）である必要があります。
 
-Let's dig deeper! You see the `sin_addr` field is a `struct in_addr`.
-What is that thing? Well, not to be overly dramatic, but it's one of the
-scariest unions of all time:
+もう一段深く！ `sin_addr` は `struct in_addr` です。何者？ 史上最恐の union の 1 つでした：
 
 ```{.c}
 // (IPv4 only--see struct in6_addr for IPv6)
@@ -403,15 +227,10 @@ struct in_addr {
 };
 ```
 
-Whoa! Well, it _used_ to be a union, but now those days seem to be gone.
-Good riddance. So if you have declared `ina` to be of type `struct
-sockaddr_in`, then `ina.sin_addr.s_addr` references the 4-byte IP
-address (in Network Byte Order).  Note that even if your system still
-uses the God-awful union for `struct in_addr`, you can still reference
-the 4-byte IP address in exactly the same way as I did above (this due
-to `#define`s).
+おお！ _かつて_ は union でしたが、今はそうでもありません。良かった。`ina` を `struct
+sockaddr_in` 型と宣言すれば、`ina.sin_addr.s_addr` が 4 バイトの IP アドレス（ネットワーク・バイト順）を参照します。システムが `struct in_addr` に union を使っていても、上と同じ方法で 4 バイト IP を参照できます（`#define` のおかげ）。
 
-What about [i[IPv6]] IPv6? Similar `struct`s exist for it, as well:
+[i[IPv6]] IPv6 も同様の `struct` があります：
 
 ```{.c}
 // (IPv6 only--see struct sockaddr_in and struct in_addr for IPv4)
@@ -429,18 +248,12 @@ struct in6_addr {
 };
 ```
 
-Note that IPv6 has an IPv6 address and a port number, just like IPv4 has
-an IPv4 address and a port number.
+IPv6 も IPv6 アドレスとポート番号を持ち、IPv4 も IPv4 アドレスとポート番号を持つ、という点は同じです。
 
-Also note that I'm not going to talk about the IPv6 flow information or
-Scope ID fields for the moment... this is just a starter guide. `:-)`
+IPv6 の flow information や Scope ID フィールドは今は触れません……入門ガイドなので。`:-)`
 
-Last but not least, here is another simple structure, `struct
-sockaddr_storage` that is designed to be large enough to hold both IPv4
-and IPv6 structures. See, for some calls, sometimes you don't know in
-advance if it's going to fill out your `struct sockaddr` with an IPv4 or
-IPv6 address. So you pass in this parallel structure, very similar to
-`struct sockaddr` except larger, and then cast it to the type you need:
+最後に、`struct
+sockaddr_storage` というシンプルな構造体。IPv4 と IPv6 の両方を載せられる十分な大きさです。呼び出しによって `struct sockaddr` が IPv4 か IPv6 で埋まるか事前にわからない場合、この大きめの並行構造体を渡して、必要な型にキャストします：
 
 ```{.c}
 struct sockaddr_storage {
@@ -453,27 +266,15 @@ struct sockaddr_storage {
 };
 ```
 
-What's important is that you can see the address family in the
-`ss_family` field---check this to see if it's `AF_INET` or `AF_INET6`
-(for IPv4 or IPv6).  Then you can cast it to a `struct sockaddr_in` or
-`struct sockaddr_in6` if you wanna.
+重要なのは `ss_family` でアドレスファミリがわかること——`AF_INET` か `AF_INET6`（IPv4 か IPv6）か確認し、`struct sockaddr_in` か `struct sockaddr_in6` にキャストすればよい、ということです。
 
 
-## IP Addresses, Part Deux
+## IP アドレス、其の弐
 
-Fortunately for you, there are a bunch of functions that allow you to
-manipulate [i[IP address]] IP addresses. No need to figure them out by
-hand and stuff them in a `long` with the `<<` operator.
+幸い、[i[IP address]] IP アドレスを操作する関数がたくさんあります。手計算で `long` に `<<` で詰める必要はありません。
 
-First, let's say you have a `struct sockaddr_in ina`, and you have an IP
-address "`10.12.110.57`" or "`2001:db8:63b3:1::3490`" that you want to
-store into it.  The function you want to use, [i[`inet_pton()`
-function]] `inet_pton()`, converts an IP address in numbers-and-dots
-notation into either a `struct in_addr` or a `struct in6_addr` depending
-on whether you specify `AF_INET` or `AF_INET6`. ("`pton`" stands for
-"presentation to network"---you can call it "printable to network" if
-that's easier to remember.) The conversion can be made as follows for
-IPv4 and IPv6:
+`struct sockaddr_in ina` があり、IP アドレス「`10.12.110.57`」または「`2001:db8:63b3:1::3490`」を入れたいとします。[i[`inet_pton()`
+function]] `inet_pton()` が、ドット区切り表記の IP を `AF_INET` なら `struct in_addr`、`AF_INET6` なら `struct in6_addr` に変換します。（「`pton`」= presentation to network——「printable to network」と覚えてもよい。）IPv4 と IPv6 の変換例：
 
 ```{.c}
 struct sockaddr_in sa;   // IPv4
@@ -483,24 +284,11 @@ inet_pton(AF_INET, "10.12.110.57", &(sa.sin_addr));
 inet_pton(AF_INET6, "2001:db8:63b3:1::3490", &(sa6.sin6_addr));
 ```
 
-(Quick note: the old way of doing things used a function called
-[i[`inet_addr()` function]] `inet_addr()` or another function called
-[i[`inet_aton()` function]] `inet_aton()`; these are now obsolete and
-don't work with IPv6.)
+（補足：昔は [i[`inet_addr()` function]] `inet_addr()` や [i[`inet_aton()` function]] `inet_aton()` を使いました。今は obsolete で IPv6 非対応です。）
 
-Now, the above code snippet isn't very robust because there is no error
-checking. See, `inet_pton()` returns `-1` on error, or 0 if the address
-is messed up. So check to make sure the result is greater than 0 before
-using!
+上のスニペットはエラーチェックがなくあまり堅牢ではありません。`inet_pton()` はエラーで `-1`、アドレスが不正なら `0` を返します。使う前に結果が 0 より大きいことを確認してください。
 
-All right, now you can convert string IP addresses to their binary
-representations. What about the other way around? What if you have a
-`struct in_addr` and you want to print it in numbers-and-dots notation?
-(Or a `struct in6_addr` that you want in, uh, "hex-and-colons"
-notation.) In this case, you'll want to use the function
-[i[`inet_ntop()` function]] `inet_ntop()` ("ntop" means "network to
-presentation"---you can call it "network to printable" if that's easier
-to remember), like this:
+文字列 IP をバイナリに変換できました。逆は？ `struct in_addr` をドット区切りで表示したい（`struct in6_addr` なら「hex-and-colons」形式）場合、[i[`inet_ntop()` function]] `inet_ntop()`（「ntop」= network to presentation——「network to printable」でも可）を使います：
 
 ```{.c .numberLines}
 // IPv4:
@@ -523,75 +311,32 @@ inet_ntop(AF_INET6, &(sa6.sin6_addr), ip6, INET6_ADDRSTRLEN);
 printf("The address is: %s\n", ip6);
 ```
 
-When you call it, you'll pass the address type (IPv4 or IPv6), the
-address, a pointer to a string to hold the result, and the maximum
-length of that string.  (Two macros conveniently hold the size of the
-string you'll need to hold the largest IPv4 or IPv6 address:
-`INET_ADDRSTRLEN` and `INET6_ADDRSTRLEN`.)
+呼び出し時はアドレス型（IPv4 か IPv6）、アドレス、結果文字列へのポインタ、その最大長を渡します。（最大 IPv4/IPv6 文字列長を保持するマクロ：`INET_ADDRSTRLEN` と `INET6_ADDRSTRLEN`。）
 
-(Another quick note to mention once again the old way of doing things:
-the historical function to do this conversion was called
-[i[`inet_ntoa()` function]] `inet_ntoa()`. It's also obsolete and won't
-work with IPv6.)
+（もう 1 つ：昔は [i[`inet_ntoa()` function]] `inet_ntoa()` で変換していました。こちらも obsolete で IPv6 非対応。）
 
-Lastly, these functions only work with numeric IP addresses---they won't
-do any nameserver DNS lookup on a hostname, like "`www.example.com`".
-You will use `getaddrinfo()` to do that, as you'll see later on.
+これらの関数は数値 IP のみ——「`www.example.com`」のようなホスト名の DNS ルックアップはしません。それは後述の `getaddrinfo()` です。
 
 
-### Private (Or Disconnected) Networks
+### プライベート（または非接続）ネットワーク
 
-[i[Private network]] Lots of places have a [i[Firewall]] firewall that
-hides the network from the rest of the world for their own protection.
-And often times, the firewall translates "internal" IP addresses to
-"external" (that everyone else in the world knows) IP addresses using a
-process called _Network Address Translation_, or [i[NAT]] NAT.
+[i[Private network]] 多くの場所では [i[Firewall]] ファイアウォールがネットワークを外の世界から隠して保護しています。ファイアウォールは「内部」IP を「外部」（世の中が知る）IP に _Network Address Translation_、通称 [i[NAT]] NAT で変換することがよくあります。
 
-Are you getting nervous yet? "Where's he going with all this weird
-stuff?"
+不安になってきた？ 「この変な話、どこに向かうんだ？」
 
-Well, relax and buy yourself a non-alcoholic (or alcoholic) drink,
-because as a beginner, you don't even have to worry about NAT, since
-it's done for you transparently. But I wanted to talk about the network
-behind the firewall in case you started getting confused by the network
-numbers you were seeing.
+リラックスして、アルコール入り（なしでも）飲み物を。初心者なら NAT を意識する必要はほぼなく、透過的に処理されます。ただ、ファイアウォールの向こうのネットワークで見かける番号に混乱しないよう、触れておきました。
 
-For instance, I have a firewall at home. I have two static IPv4
-addresses allocated to me by the DSL company, and yet I have seven
-computers on the network. How is this possible? Two computers can't
-share the same IP address, or else the data wouldn't know which one to
-go to!
+例：自宅にファイアウォールがあります。DSL 会社から静的 IPv4 を 2 つ割り当てられているのに、LAN には 7 台の PC があります。どう可能？ 2 台が同じ IP を共有したら、データの行き先がわからない！
 
-The answer is: they don't share the same IP addresses. They are on a
-private network with 24 million IP addresses allocated to it. They are
-all just for me.  Well, all for me as far as anyone else is concerned.
-Here's what's happening:
+答え：同じ IP は共有していません。2400 万個の IP が割り当てられたプライベートネットワーク上にあり、外から見ればすべて私用です。何が起きているか：
 
-If I log into a remote computer, it tells me I'm logged in from
-192.0.2.33 which is the public IP address my ISP has provided to me. But
-if I ask my local computer what its IP address is, it says 10.0.0.5. Who
-is translating the IP address from one to the other? That's right, the
-firewall! It's doing NAT!
+リモートにログインすると、ISP が割り当てた公開 IP `192.0.2.33` からログインしたと表示されます。ローカルマシンに IP を聞くと `10.0.0.5` と答えます。誰が IP を変換している？ その通り、ファイアウォール！ NAT です！
 
-`10.x.x.x` is one of a few reserved networks that are only to be used
-either on fully disconnected networks, or on networks that are behind
-firewalls.  The details of which private network numbers are available
-for you to use are outlined in [flrfc[RFC 1918|1918]], but some common
-ones you'll see are [i[`10.x.x.x`]] `10.x.x.x` and [i[`192.168.x.x`]]
-`192.168.x.x`, where `x` is 0-255, generally. Less common is
-`172.y.x.x`, where `y` goes between 16 and 31.
+`10.x.x.x` は、完全に切り離されたネットワークか、ファイアウォールの内側専用の予約ネットワークの 1 つです。使えるプライベート番号の詳細は [flrfc[RFC 1918|1918]]。よく見るのは [i[`10.x.x.x`]] `10.x.x.x` と [i[`192.168.x.x`]]
+`192.168.x.x`（`x` はだいたい 0–255）。あまり見ないのは `172.y.x.x`（`y` は 16–31）。
 
-Networks behind a NATing firewall don't _need_ to be on one of these
-reserved networks, but they commonly are.
+NAT するファイアウォールの内側は、これらの予約ネットワークである _必要は_ ありませんが、よくそうなっています。
 
-(Fun fact! My external IP address isn't really `192.0.2.33`. The
-`192.0.2.x` network is reserved for make-believe "real" IP addresses to
-be used in documentation, just like this guide! Wowzers!)
+（豆知識！ 私の外部 IP は本当は `192.0.2.33` ではありません。`192.0.2.x` ネットワークは、このガイドのようなドキュメント用の架空「実」IP 用に予約されています！）
 
-[i[IPv6]] IPv6 has private networks, too, in a sense. They'll start with
-`fdXX:` (or maybe in the future `fcXX:`), as per [flrfc[RFC 4193|4193]].
-NAT and IPv6 don't generally mix, however (unless you're doing the IPv6
-to IPv4 gateway thing which is beyond the scope of this document)---in
-theory you'll have so many addresses at your disposal that you won't
-need to use NAT any longer. But if you want to allocate addresses for
-yourself on a network that won't route outside, this is how to do it.
+[i[IPv6]] IPv6 にも、ある意味プライベートネットワークがあります。`fdXX:`（将来は `fcXX:` かも、[flrfc[RFC 4193|4193]]）で始まります。NAT と IPv6 は一般に混ぜません（IPv6–IPv4 ゲートウェイはこの文書の範囲外）——理論上はアドレスが十分で NAT は不要になるはずです。外にルーティングしないネットワークで自分用に割り当てるなら、この方法です。

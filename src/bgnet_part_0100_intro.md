@@ -1,4 +1,4 @@
-# Intro
+# はじめに
 <!--
 Beej's Guide to Network Programming book source
 
@@ -127,160 +127,109 @@ you, Knuth, but... daaahm.
 [nh[addrinfo]]
 [nh[closesocket]]
 
-Hey! Socket programming got you down? Is this stuff just a little too
-difficult to figure out from the `man` pages? You want to do cool
-Internet programming, but you don't have time to wade through a gob of
-`struct`s trying to figure out if you have to call `bind()` before you
-`connect()`, etc., etc.
+やあ！ソケット（socket）プログラミングで困っていませんか？`man` ページだけでは、ちょっと難しすぎて理解しきれない？クールなインターネットプログラミングをやりたいのに、`struct` の山をかき分けながら、`connect()` の前に `bind()` を呼ぶ必要があるのかどうか、なんてことを調べる時間がない、とか。
 
-Well, guess what! I've already done this nasty business, and I'm dying
-to share the information with everyone! You've come to the right place.
-This document should give the average competent C programmer the edge
-s/he needs to get a grip on this networking noise.
+まあ、いい知らせがあるよ！この面倒な作業は、もう僕がやっておいた。しかも、みんなに情報を共有したくてうずうずしているところだ！来るところ正解だ。このドキュメントが、平均的に腕の立つ C プログラマに、このネットワークのノイズを掴むための武器を与えてくれるはずだ。
 
-And check it out: I've finally caught up with the future (just in the
-nick of time, too!) and have updated the Guide for IPv6! Enjoy!
+それからこれも見て：未来（ギリギリ間に合ったけど！）にようやく追いついて、ガイドを IPv6 向けに更新した！楽しんで！
+
+## 対象読者
+
+このドキュメントは完全なリファレンスではなく、チュートリアルとして書かれている。ソケットプログラミングを始めたばかりで、足がかりを探している人が読むのに、おそらく一番ちょうどいい。決して、ソケットプログラミングの完全網羅ガイド、なんてものではない。
+
+とはいえ、これで `man` ページがだんだん意味をなしてくるようになれば、十分かもしれない…… `:-)`
 
 
-## Audience
+## プラットフォームとコンパイラ
 
-This document has been written as a tutorial, not a complete reference.
-It is probably at its best when read by individuals who are just
-starting out with socket programming and are looking for a foothold. It
-is certainly not the _complete and total_ guide to sockets programming,
-by any means.
-
-Hopefully, though, it'll be just enough for those man pages to start
-making sense... `:-)`
+このドキュメントに含まれるコードは、Linux PC 上で Gnu の [i[Compilers-->GCC]] `gcc` コンパイラを使ってコンパイルされた。ただし、`gcc` を使うほとんどすべてのプラットフォームでビルドできるはずだ。もちろん、Windows 向けにプログラミングしている場合は別——下の [Windows プログラミングに関する節](#windows) を参照してほしい。
 
 
-## Platform and Compiler
+## 公式ホームページと書籍の購入
 
-The code contained within this document was compiled on a Linux PC using
-Gnu's [i[Compilers-->GCC]] `gcc` compiler. It should, however, build on
-just about any platform that uses `gcc`. Naturally, this doesn't apply
-if you're programming for Windows---see the [section on Windows
-programming](#windows), below.
-
-
-## Official Homepage and Books For Sale
-
-This official location of this document is:
+このドキュメントの公式の場所は次のとおりです：
 
 * [`https://beej.us/guide/bgnet/`](https://beej.us/guide/bgnet/)
 
-There you will also find example code and translations of the guide into
-various languages.
+日本語版はこちらです：
 
-To buy nicely bound print copies (some call them "books"), visit:
+* [`https://sashi0034.github.io/bgnet-ja/`](https://sashi0034.github.io/bgnet-ja/)
+
+そこでは、サンプルコードや、ガイドの各言語への翻訳も見つかる。
+
+きれいに製本された印刷版（本、と呼ぶ人もいる）を買いたいなら、こちらへ：
 
 * [`https://beej.us/guide/url/bgbuy`](https://beej.us/guide/url/bgbuy)
 
-I'll appreciate the purchase because it helps sustain my
-document-writing lifestyle!
+購入してくれるとうれしい。ドキュメント執筆という生き方を続ける助けになるから！
 
 
-## Note for Solaris/SunOS/illumos Programmers {#solaris}
+## Solaris/SunOS/illumos プログラマ向け注記 {#solaris}
 
-When compiling for a [i[Solaris]] Solaris variant or [i[SunOS]] SunOS,
-you need to specify some extra command-line switches for linking in the
-proper libraries. In order to do this, simply add "`-lnsl -lsocket
--lresolv`" to the end of the compile command, like so:
+[i[Solaris]] Solaris 系や [i[SunOS]] SunOS 向けにコンパイルするときは、適切なライブラリをリンクするために、いくつか追加のコマンドラインスイッチを指定する必要がある。これを行うには、コンパイルコマンドの末尾に "`-lnsl -lsocket -lresolv`" を追加するだけだ。例えばこんな感じ：
 
 ```
 $ cc -o server server.c -lnsl -lsocket -lresolv
 ```
 
-If you still get errors, you could try further adding a `-lxnet` to the
-end of that command line. I don't know what that does, exactly, but some
-people seem to need it.
+それでもエラーが出るなら、コマンドラインの末尾に `-lxnet` をさらに足してみてもいい。正確に何をするのかは僕も知らないけど、必要とする人がいるらしい。
 
-Another place that you might find problems is in the call to
-`setsockopt()`. The prototype differs from that on my Linux box, so
-instead of:
+問題が出る可能性があるもう一つの場所は、`setsockopt()` の呼び出しだ。プロトタイプが僕の Linux ボックス上のものと異なるので、次の代わりに：
 
 ```{.c}
 int yes=1;
 ```
 
-enter this:
+こう書く：
 
 ```{.c}
 char yes='1';
 ```
 
-As I don't have a Sun box, I haven't tested any of the above
-information---it's just what people have told me through email.
+Sun マシンを持っていないので、上記の情報はテストしていない——メールで教えてもらった内容をそのまま載せているだけだ。
 
 
-## Note for Windows Programmers {#windows}
+## Windows プログラマ向け注記 {#windows}
 
-At this point in the guide, historically, I've done a bit of bagging on
-[i[Windows]] Windows, simply due to the fact that I don't like it very
-much. But then Windows and Microsoft (as a company) got a lot better.
-Windows 10 coupled with WSL (below) actually makes for a decent
-operating system. Not really a lot to complain about.
+このガイドのこの地点では、歴史的に、僕は [i[Windows]] Windows をけなしてきた。単にあまり好きじゃないからだ。でも、その後 Windows も Microsoft（会社として）もだいぶ良くなった。Windows 10 と WSL（下記）を組み合わせると、実際にまともな OS になる。文句を言うことも、そんなに多くない。
 
-Well, a little—for example, I'm writing this (in 2025) on a 2015 laptop
-that used to run Windows 10. Eventually it got too slow and I installed
-Linux on it. And have been using it ever since.
+まあ、少しは——例えば、僕はこれを（2025 年に）Windows 10 が入っていた 2015 年製ノート PC で書いている。いつか遅くなりすぎて、Linux を入れた。それ以来ずっと使っている。
 
-But now we have Windows 11 that apparently requires beefier hardware
-than Windows 10. I'm not a fan of that. The OS should be as unobtrusive
-as possible and not require you to spend more money. The extra CPU power
-should be for apps, not the OS! Additionally, Microsoft knows what you
-want, and what you want is more advertising! Right? In your operating
-system! Weren't you missing that? Now you can have it with Windows 11.
+でも今度は Windows 11 がある。どうやら Windows 10 よりもハードウェアに余裕が必要らしい。僕はそれが好きじゃない。OS はできるだけ目立たず、追加の出費を強いるべきじゃない。余分な CPU パワーはアプリのためであって、OS のためじゃない！それに、Microsoft はあなたが何を望んでいるか知っている。望んでいるのは、もっと広告だ！そうでしょ？OS の中に！それが恋しかったんじゃない？Windows 11 なら手に入るよ。
 
-So... I still encourage you to try [i[Linux]]
-[fl[Linux|https://www.linux.com/]], [i[BSD]] [fl[BSD|https://bsd.org/]],
-[i[illumos]] [fl[illumos|https://www.illumos.org/]] or any other flavor
-of Unix instead of Windows.
+だから……それでも [i[Linux]]
+[fl[Linux|https://www.linux.com/]]、[i[BSD]] [fl[BSD|https://bsd.org/]]、
+[i[illumos]] [fl[illumos|https://www.illumos.org/]] など、Windows の代わりに Unix 系のどれかを試すことを勧める。
 
-How'd that soapbox get there?
+この説教台、どこから来たんだ？
 
-But people like what they like, and you Windows folk will be pleased to
-know that this information is generally applicable to Windows, with a
-few minor changes.
+でも、好きなものは好きなんだろう。Windows 派のみなさんも喜んでくれると思う——この情報は、いくつか小さな変更を除けば、Windows にも概ね当てはまる。
 
-One thing that you should strongly consider is [i[WSL]] [i[Windows
-Subsystem For Linux]] the [fl[Windows Subsystem for
-Linux|https://learn.microsoft.com/en-us/windows/wsl/]]. This basically
-allows you to install a Linux VM-ish thing on Windows 10. That will also
-definitely get you situated, and you'll be able to build and run these
-programs as is.
+強く検討してほしいのが [i[WSL]] [i[Windows
+Subsystem For Linux]] [fl[Windows Subsystem for
+Linux|https://learn.microsoft.com/en-us/windows/wsl/]] だ。これは基本的に、Windows 10 上に Linux の VM みたいなものを入れられる。それでも間違いなく環境が整うし、このプログラムをそのままビルドして実行できる。
 
-Another thing you can do is install [i[Cygwin]]
-[fl[Cygwin|https://cygwin.com/]], which is a collection of Unix tools
-for Windows. I've heard on the grapevine that doing so allows all these
-programs to compile unmodified, but I've never tried it.
+もう一つの方法は [i[Cygwin]]
+[fl[Cygwin|https://cygwin.com/]] をインストールすることだ。Windows 向けの Unix ツール集だ。噂では、これを入れるとここにあるプログラムがすべて修正なしでコンパイルできるらしいけど、僕は試したことがない。
 
-Some of you might want to do things the Pure Windows Way. That's very
-gutsy of you, and this is what you have to do: run out and get Unix
-immediately! No, no---I'm kidding. I'm supposed to be
-Windows-friendly(er) these days...
+Pure Windows Way でやりたい人もいるだろう。度胸があるね。やることはこれだ：すぐ Unix を手に入れろ！……冗談だよ。最近は Windows にも（少し）優しくするはずなんだけど……
 
-Okay, okay. I'll get on with it.
+わかった、わかった。本題に入るよ。
 
 [i[Winsock]]
 
-This is what you'll have to do: first, ignore pretty much all of the
-system header files I mention in here. Instead, include:
+やることはこうだ：まず、ここで言及するシステムヘッダファイルは、だいたい無視してほしい。代わりに、次をインクルードする：
 
 ```{.c}
 #include <winsock2.h>
 #include <ws2tcpip.h>
 ```
 
-`winsock2` is the "new" (circa 1994) version of the Windows socket
-library.
+`winsock2` は Windows ソケットライブラリの「新しい」（1994 年頃）バージョンだ。
 
-Unfortunately, if you include `windows.h`, it automatically pulls in
-the older `winsock.h` (version 1) header file which conflicts with
-`winsock2.h`! Fun times.
+残念ながら、`windows.h` をインクルードすると、古い `winsock.h`（バージョン 1）ヘッダが自動的に引き込まれ、`winsock2.h` と衝突する！楽しいね。
 
-So if you have to include `windows.h`, you need to define a macro to get
-it to _not_ include the older header:
+だから `windows.h` をインクルードする必要があるなら、古いヘッダをインクルード*しない*ようにマクロを定義する必要がある：
 
 ```{.c}
 #define WIN32_LEAN_AND_MEAN  // Say this...
@@ -289,13 +238,10 @@ it to _not_ include the older header:
 #include <winsock2.h>        // And this.
 ```
 
-Wait! You also have to make a call to [i[`WSAStartup()` function]]
-`WSAStartup()` before doing anything else with the sockets library. You
-pass in the Winsock version you desire to this function (e.g. version
-2.2). And then you can check the result to make sure that version is
-available.
+待って！ソケットライブラリで何かする前に、[i[`WSAStartup()` function]]
+`WSAStartup()` を呼ぶ必要もある。この関数に使いたい Winsock のバージョン（例：2.2）を渡す。そして結果を確認して、そのバージョンが使えることを確かめる。
 
-The code to do that looks something like this:
+そのコードはだいたいこんな感じ：
 
 ```{.c .numberLines}
 #include <winsock2.h>
@@ -317,161 +263,91 @@ The code to do that looks something like this:
     }
 ```
 
-Note that call to [i[`WSACleanup()` function]] `WSACleanup()` in there.
-That's what you want to call when you're done with the Winsock library.
+そこにある [i[`WSACleanup()` function]] `WSACleanup()` の呼び出しに注目。Winsock ライブラリを使い終わったときに呼ぶ関数だ。
 
-You also have to tell your compiler to link in the Winsock library,
-called `ws2_32.lib` for Winsock 2. Under VC++, this can be done through
-the `Project` menu, under `Settings...`. Click the `Link` tab, and look
-for the box titled "Object/library modules". Add "ws2_32.lib" (or
-whichever lib is your preference) to that list.
+コンパイラに Winsock ライブラリのリンクも指示する必要がある。Winsock 2 では `ws2_32.lib` と呼ばれる。VC++ では、`Project` メニューの `Settings...` からできる。`Link` タブをクリックして、"Object/library modules" というボックスを探す。そこに "ws2_32.lib"（または好みの lib）を追加する。
 
-Or so I hear.
+……らしい。
 
-Once you do that, the rest of the examples in this tutorial should
-generally apply, with a few exceptions. For one thing, you can't use
-`close()` to close a socket---you need to use [i[`closesocket()`
-function]] `closesocket()`, instead. Also, [i[`select()` function]]
-`select()` only works with socket descriptors, not file descriptors
-(like `0` for `stdin`).
+それができれば、このチュートリアルの残りの例は、いくつかの例外を除いて、概ねそのまま使える。一点、ソケットを閉じるのに `close()` は使えない——代わりに [i[`closesocket()`
+function]] `closesocket()` を使う必要がある。また、[i[`select()` function]]
+`select()` はファイル記述子（`stdin` の `0` など）ではなく、ソケット記述子にしか使えない。
 
-There is also a socket class that you can use, [i[`CSocket` class]]
+使えるソケットクラスもある。[i[`CSocket` class]]
 [`CSocket`](https://learn.microsoft.com/en-us/cpp/mfc/reference/csocket-class?view=msvc-170)
-Check your compiler's help pages for more information.
+詳しくはコンパイラのヘルプページを参照してほしい。
 
-To get more information about Winsock, [check out the official page at
-Microsoft](https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-start-page-2).
+Winsock の詳細は、[Microsoft の公式ページ](https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-start-page-2)を参照してほしい。
 
-Finally, I hear that Windows has no [i[`fork()` function]] `fork()`
-system call which is, unfortunately, used in some of my examples. Maybe
-you have to link in a POSIX library or something to get it to work, or
-you can use [i[`CreateProcess()` function]] `CreateProcess()` instead.
-`fork()` takes no arguments, and `CreateProcess()` takes about 48
-billion arguments. If you're not up to that, the [i[`CreateThread()`
-function]] `CreateThread()` is a little easier to digest...unfortunately
-a discussion about multithreading is beyond the scope of this document.
-I can only talk about so much, you know!
+最後に、Windows には [i[`fork()` function]] `fork()`
+システムコールがない、と聞いている。残念ながら、僕の例のいくつかで使っている。POSIX ライブラリをリンクする必要があるのかもしれないし、代わりに [i[`CreateProcess()` function]] `CreateProcess()` を使うこともできる。`fork()` は引数を取らないが、`CreateProcess()` はだいたい 48 億個の引数を取る。それが厳しければ、[i[`CreateThread()`
+function]] `CreateThread()` の方が少し飲み込みやすい……残念ながら、マルチスレッドの話はこのドキュメントの範囲外だ。書けることには限りがあるんだ、わかるだろ？
 
-Extra finally, Steven Mitchell has [fl[ported a number of the
-examples|https://www.tallyhawk.net/WinsockExamples/]] to Winsock. Check
-that stuff out.
+さらに最後に、Steven Mitchell が [fl[例のいくつかを Winsock 向けに移植|https://www.tallyhawk.net/WinsockExamples/]] している。そちらもチェックしてみてほしい。
 
 
-## Email Policy
+## メールについて
 
-I'm generally available to help out with [i[Emailing Beej]] email
-questions so feel free to write in, but I can't guarantee a response. I
-lead a pretty busy life and there are times when I just can't answer a
-question you have. When that's the case, I usually just delete the
-message. It's nothing personal; I just won't ever have the time to give
-the detailed answer you require.
+[i[Emailing Beej]] メールでの質問には、だいたい対応できるので、気軽に書いてほしい。ただし、返信を保証するものではない。結構忙しい生活を送っていて、質問に答えられないときもある。そのときは、たいていメッセージを削除する。個人的なことじゃない——必要な詳しい回答を書く時間が、どうしてもないだけだ。
 
-As a rule, the more complex the question, the less likely I am to
-respond. If you can narrow down your question before mailing it and be
-sure to include any pertinent information (like platform, compiler,
-error messages you're getting, and anything else you think might help me
-troubleshoot), you're much more likely to get a response. For more
-pointers, read ESR's document, [fl[How To Ask Questions The Smart
-Way|http://www.catb.org/~esr/faqs/smart-questions.html]].
+ルールとして、質問が複雑になるほど、返信の可能性は低くなる。メールする前に質問を絞り込み、関連情報（プラットフォーム、コンパイラ、出ているエラーメッセージ、トラブルシュートに役立ちそうなことなど）を必ず含めてくれれば、返信されやすくなる。さらにヒントが欲しければ、ESR の [fl[賢く質問する方法|http://www.catb.org/~esr/faqs/smart-questions.html]] を読んでほしい。
 
-If you don't get a response, hack on it some more, try to find the
-answer, and if it's still elusive, then write me again with the
-information you've found and hopefully it will be enough for me to help
-out.
+返事がなければ、もう少し自分でいじって、答えを探してみて。それでも見つからなければ、見つかった情報を添えてもう一度書いてくれ。そうすれば、助けられるかもしれない。
 
-Now that I've badgered you about how to write and not write me, I'd just
-like to let you know that I _fully_ appreciate all the praise the guide
-has received over the years. It's a real morale boost, and it gladdens
-me to hear that it is being used for good! `:-)` Thank you!
+書き方についてうるさく言ったあとで、ガイドが長年受けてきた称賛には*本当に*感謝している、と伝えたい。士気を上げてくれるし、良い目的に使われていると聞くとうれしい！ `:-)` ありがとう！
 
 
-## Mirroring
+## ミラーサイト
 
-[i[Mirroring the Guide]] You are more than welcome to mirror this site,
-whether publicly or privately. If you publicly mirror the site and want
-me to link to it from the main page, drop me a line at
-[`beej@beej.us`](mailto:beej@beej.us).
+[i[Mirroring the Guide]] このサイトを公開・非公開を問わずミラーしてもらって構わない。公開ミラーにしてメインページからリンクしてほしい場合は、[`beej@beej.us`](mailto:beej@beej.us) まで連絡してほしい。
 
 
-## Note for Translators
+## 翻訳者向け注記
 
-[i[Translating the Guide]] If you want to translate the guide into
-another language, write me at [`beej@beej.us`](mailto:beej@beej.us) and
-I'll link to your translation from the main page. Feel free to add your
-name and contact info to the translation.
+[i[Translating the Guide]] ガイドを別の言語に翻訳したい場合は、[`beej@beej.us`](mailto:beej@beej.us) に連絡してくれ。メインページから翻訳へのリンクを張る。翻訳に自分の名前と連絡先を載せても構わない。
 
-This source markdown document uses UTF-8 encoding.
+**日本語訳について：** 本日本語訳は GitHub Pages（[`https://sashi0034.github.io/bgnet-ja/`](https://sashi0034.github.io/bgnet-ja/)）で公開されている。原文の著作権は Brian "Beej Jorgensen" Hall 氏に帰属する。
 
-Please note the license restrictions in the [Copyright, Distribution,
-and Legal](#legal) section, below.
+このソース Markdown ドキュメントは UTF-8 エンコーディングを使用している。
 
-If you want me to host the translation, just ask. I'll also link to it
-if you want to host it; either way is fine.
+下記の [著作権、配布、および法的事項](#legal) 節のライセンス制限に注意してほしい。
+
+翻訳をホスティングしてほしい場合は、声をかけてくれ。自分でホストする場合も、リンクを張る。どちらでも構わない。
 
 
-## Copyright, Distribution, and Legal {#legal}
+## 著作権、配布、および法的事項 {#legal}
 
-Beej's Guide to Network Programming is Copyright © 2019 Brian "Beej
+Beej's Guide to Network Programming の著作権 © 2019 Brian "Beej
 Jorgensen" Hall.
 
-With specific exceptions for source code and translations, below, this
-work is licensed under the Creative Commons Attribution- Noncommercial-
-No Derivative Works 3.0 License. To view a copy of this license, visit
+以下のソースコードおよび翻訳に関する特定の例外を除き、この作品は Creative Commons Attribution- Noncommercial-
+No Derivative Works 3.0 License の下でライセンスされている。このライセンスの写しは、次の URL で閲覧できる：
 
 [`https://creativecommons.org/licenses/by-nc-nd/3.0/`](https://creativecommons.org/licenses/by-nc-nd/3.0/)
 
-or send a letter to Creative Commons, 171 Second Street, Suite 300, San
-Francisco, California, 94105, USA.
+または Creative Commons, 171 Second Street, Suite 300, San
+Francisco, California, 94105, USA あてに手紙を送ること。
 
-One specific exception to the "No Derivative Works" portion of the
-license is as follows: this guide may be freely translated into any
-language, provided the translation is accurate, and the guide is
-reprinted in its entirety. The same license restrictions apply to the
-translation as to the original guide. The translation may also include
-the name and contact information for the translator.
+ライセンスの「No Derivative Works（改変禁止）」部分に対する一つの特定の例外は次のとおり：このガイドは、翻訳が正確であり、ガイド全体が再印刷される限り、任意の言語に自由に翻訳できる。翻訳にも、原文と同じライセンス制限が適用される。翻訳には、翻訳者の名前と連絡先を含めてもよい。
 
-The C source code presented in this document is hereby granted to the
-public domain, and is completely free of any license restriction.
+このドキュメントに示されている C ソースコードは、パブリックドメインに提供され、いかなるライセンス制限もまったくない。
 
-Educators are freely encouraged to recommend or supply copies of this
-guide to their students.
+教育者は、学生にこのガイドのコピーを推薦または提供することを自由に行える。
 
-Unless otherwise mutually agreed by the parties in writing, the author
-offers the work as-is and makes no representations or warranties of any
-kind concerning the work, express, implied, statutory or otherwise,
-including, without limitation, warranties of title, merchantability,
-fitness for a particular purpose, noninfringement, or the absence of
-latent or other defects, accuracy, or the presence of absence of errors,
-whether or not discoverable.
+書面による双方の合意がない限り、著者は作品を現状のまま提供し、作品に関する明示的、黙示的、法定その他いかなる種類の表明または保証（タイトル、商品性、特定目的への適合性、非侵害、または潜在的その他の欠陥の不存在、正確性、またはエラーの有無（発見可能かどうかを問わず）を含むがこれらに限定されない）も行わない。
 
-Except to the extent required by applicable law, in no event will the
-author be liable to you on any legal theory for any special, incidental,
-consequential, punitive or exemplary damages arising out of the use of
-the work, even if the author has been advised of the possibility of such
-damages.
+適用法で要求される範囲を除き、著者がそのような損害の可能性を知らされていた場合でも、いかなる法的理論においても、作品の使用から生じる特別、付随、結果的、懲罰的または模範的損害について、著者はあなたに対して責任を負わない。
 
-Contact [`beej@beej.us`](mailto:beej@beej.us) for more information.
+詳細は [`beej@beej.us`](mailto:beej@beej.us) まで連絡してほしい。
 
 
-## Dedication
+## 献辞
 
-Thanks to everyone who has helped in the past and future with me getting
-this guide written. And thank you to all the people who produce the Free
-software and packages that I use to make the Guide: GNU, Linux,
-Slackware, vim, Python, Inkscape, pandoc, many others. And finally a big
-thank-you to the literally thousands of you who have written in with
-suggestions for improvements and words of encouragement.
+このガイドの執筆を手伝ってくれた、過去と未来のみなさんに感謝する。そして、ガイドの作成に使っている Free ソフトウェアやパッケージを生み出してくれた人たちにも：GNU、Linux、Slackware、vim、Python、Inkscape、pandoc、その他多数。そして最後に、改善提案や励ましの言葉を寄せてくれた、文字通り何千人もの方々に、心から感謝する。
 
-I dedicate this guide to some of my biggest heroes and inpirators in the
-world of computers: Donald Knuth, Bruce Schneier, W. Richard Stevens,
-and The Woz, my Readership, and the entire Free and Open Source Software
-Community.
+このガイドを、コンピュータの世界で僕の最大のヒーロー兼インスピレーションの源である Donald Knuth、Bruce Schneier、W. Richard Stevens、The Woz、読者のみなさん、そして Free および Open Source ソフトウェアコミュニティ全体に捧げる。
 
 
-## Publishing Information
+## 出版情報
 
-This book is written in Markdown using the vim editor on an Arch Linux
-box loaded with GNU tools. The cover "art" and diagrams are produced
-with Inkscape.  The Markdown is converted to HTML and LaTex/PDF by
-Python, Pandoc and XeLaTeX, using Liberation fonts. The toolchain is
-composed of 100% Free and Open Source Software.
+この本は、GNU ツールを載せた Arch Linux マシン上で vim エディタを使い、Markdown で書かれている。表紙の「アート」と図は Inkscape で作成した。Markdown は Python、Pandoc、XeLaTeX によって HTML および LaTeX/PDF に変換され、Liberation フォントを使用している。ツールチェーンは 100% Free および Open Source ソフトウェアで構成されている。

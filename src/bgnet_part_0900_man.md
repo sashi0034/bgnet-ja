@@ -1,52 +1,28 @@
-# Man Pages
+# マンページ
 
 [i[man pages]<]
 
-In the Unix world, there are a lot of manuals. They have little sections
-that describe individual functions that you have at your disposal.
+Unix の世界にはマニュアルがたくさんある。使える個々の関数を説明する小さなセクションに分かれている。
 
-Of course, `manual` would be too much of a thing to type. I mean, no one
-in the Unix world, including myself, likes to type that much. Indeed I
-could go on and on at great length about how much I prefer to be terse
-but instead I shall be brief and not bore you with long-winded diatribes
-about how utterly amazingly brief I prefer to be in virtually all
-circumstances in their entirety.
+もちろん `manual` なんて全部打つのは面倒だ。Unix 界隈の人間、自分を含めて、そんなに打つのは好きじゃない。簡潔さの好みについて延々と語ることもできるが、代わりに短くまとめて、あらゆる状況でどれだけ簡潔であることを好むかについての長々とした説教で退屈させることはしない。
 
-_[Applause]_
+_[拍手]_
 
-Thank you. What I am getting at is that these pages are called "man
-pages" in the Unix world, and I have included my own personal truncated
-variant here for your reading enjoyment. The thing is, many of these
-functions are way more general purpose than I'm letting on, but I'm only
-going to present the parts that are relevant for Internet Sockets
-Programming.
+ありがとう。言いたいのは、Unix ではこれらのページのことを "man pages"（マンページ）と呼ぶ、ということだ。読みやすいように、ここでは自分なりの省略版を載せてある。実際にはこれらの関数の多くは、ここで書いている以上に汎用的だが、インターネットソケットプログラミングに関係する部分だけを紹介する。
 
-But wait! That's not all that's wrong with my man pages:
+でも待て！ このマンページの問題はそれだけじゃない：
 
-* They are incomplete and only show the basics from the guide.
-* There are many more man pages than this in the real world.
-* They are different than the ones on your system.
-* The header files might be different for certain functions on your
-  system.
-* The function parameters might be different for certain functions on
-  your system.
+* 不完全で、ガイドの基本だけを示している。
+* 現実にはもっとたくさんのマンページがある。
+* 自分のシステム上のものとは違う。
+* 関数によっては、システムごとにヘッダファイルが違うかもしれない。
+* 関数によっては、システムごとにパラメータが違うかもしれない。
 
-If you want the real information, check your local Unix man pages by
-typing `man whatever`, where "whatever" is something that you're
-incredibly interested in, such as "`accept`". (I'm sure Microsoft Visual
-Studio has something similar in their help section. But "man" is better
-because it is one byte more concise than "help". Unix wins again!)
+本物の情報が欲しければ、ローカルの Unix マンページを `man whatever` と打って確認してほしい。"whatever" は、例えば "`accept`" のように、ものすごく興味のあるものだ。（Microsoft Visual Studio にもヘルプで似たものがあるだろう。でも "man" の方が "help" より 1 バイト短い。Unix の勝ちだ！）
 
-So, if these are so flawed, why even include them at all in the Guide?
-Well, there are a few reasons, but the best are that (a) these versions
-are geared specifically toward network programming and are easier to
-digest than the real ones, and (b) these versions contain examples!
+じゃあ、こんなに欠点があるのに、なぜガイドに載せるのか？ 理由はいくつかあるが、一番いいのは (a) これらの版はネットワークプログラミング向けに特化していて、本物より読みやすいこと、(b) サンプルコードが入っていること、だ。
 
-Oh! And speaking of the examples, I don't tend to put in all the error
-checking because it really increases the length of the code. But you
-should absolutely do error checking pretty much any time you make any of
-the system calls unless you're totally 100% sure it's not going to fail,
-and you should probably do it even then!
+あ！ サンプルの話をすると、エラーチェックを全部入れるとコードがかなり長くなるので、あまり入れない傾向がある。でも、失敗しないと 100% 確信できる場合を除いて、システムコールを呼ぶたびにだいたいエラーチェックをすべきだ。たぶんその場合でもやった方がいい！
 
 [i[man pages]>]
 
@@ -55,9 +31,9 @@ and you should probably do it even then!
 
 [i[`accept()` function]i]
 
-Accept an incoming connection on a listening socket
+待ち受けソケットで入ってくる接続を受け付ける
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/types.h>
@@ -66,40 +42,27 @@ Accept an incoming connection on a listening socket
 int accept(int s, struct sockaddr *addr, socklen_t *addrlen);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-Once you've gone through the trouble of getting a `SOCK_STREAM` socket
-and setting it up for incoming connections with `listen()`, then you
-call `accept()` to actually get yourself a new socket descriptor to use
-for subsequent communication with the newly connected client.
+`SOCK_STREAM` ソケットを用意し、`listen()` で入ってくる接続の待ち受け設定を済ませたら、次は `accept()` を呼んで、新しく接続したクライアントとの通信に使う新しいソケット記述子を手に入れる。
 
-The old socket that you are using for listening is still there, and will
-be used for further `accept()` calls as they come in.
+待ち受けに使っていた古いソケットはそのまま残り、次の `accept()` 呼び出しにも使われる。
 
-| Parameter | Description                                                   |
+| パラメータ | 説明                                                   |
 |-----------|---------------------------------------------------------------|
-| `s`       | The `listen()`ing socket descriptor.                          | 
-| `addr`    | This is filled in with the address of the site that's connecting to you.|
-| `addrlen` | This is filled in with the `sizeof()` the structure returned in the `addr` parameter. You can safely ignore it if you assume you're getting a `struct sockaddr_in` back, which you know you are, because that's the type you passed in for `addr`.|
+| `s`       | `listen()` しているソケット記述子。                          | 
+| `addr`    | 接続してきた相手のアドレスがここに入る。|
+| `addrlen` | `addr` パラメータに返される構造体の `sizeof()` がここに入る。`addr` に `struct sockaddr_in` が返ってくると決め打ちできるなら無視しても安全だ。実際その型を渡しているので、そうだと分かっているはず。|
 
-`accept()` will normally block, and you can use `select()` to peek on
-the listening socket descriptor ahead of time to see if it's "ready to
-read". If so, then there's a new connection waiting to be `accept()`ed!
-Yay! Alternatively, you could set the [i[`O_NONBLOCK` macro]]
-`O_NONBLOCK` flag on the listening socket using [i[`fcntl()` function]]
-`fcntl()`, and then it will never block, choosing instead to return `-1`
-with `errno` set to `EWOULDBLOCK`.
+`accept()` は通常ブロックする。待ち受けソケット記述子に対して事前に `select()` で覗いて、"読み取り可能" かどうか確認できる。そうなら、`accept()` 待ちの新しい接続がある！ やった！ 別の方法として、待ち受けソケットに [i[`fcntl()` function]] `fcntl()` で [i[`O_NONBLOCK` macro]] `O_NONBLOCK` フラグを設定すれば、ブロックせず、代わりに `-1` を返して `errno` が `EWOULDBLOCK` になる。
 
-The socket descriptor returned by `accept()` is a bona fide socket
-descriptor, open and connected to the remote host. You have to `close()`
-it when you're done with it.
+`accept()` が返すソケット記述子は、リモートホストに接続済みの本物のソケット記述子だ。使い終わったら `close()` する必要がある。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-`accept()` returns the newly connected socket descriptor, or `-1` on
-error, with `errno` set appropriately.
+`accept()` は新しく接続されたソケット記述子を返す。エラー時は `-1` で、`errno` が適切に設定される。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 struct sockaddr_storage their_addr;
@@ -130,7 +93,7 @@ new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
 // ready to communicate on socket descriptor new_fd!
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`socket()`](#socketman), [`getaddrinfo()`](#getaddrinfoman),
 [`listen()`](#listenman), [`struct sockaddr_in`](#structsockaddrman)
@@ -141,9 +104,9 @@ new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
 
 [i[`bind()` function]i]
 
-Associate a socket with an IP address and port number
+ソケットを IP アドレスとポート番号に関連付ける
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/types.h>
@@ -152,43 +115,23 @@ Associate a socket with an IP address and port number
 int bind(int sockfd, struct sockaddr *my_addr, socklen_t addrlen);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-When a remote machine wants to connect to your server program, it needs
-two pieces of information: the IP address and the port number. The
-`bind()` call allows you to do just that.
+リモートマシンがサーバープログラムに接続したいとき、必要な情報は 2 つ：IP アドレスとポート番号。`bind()` 呼び出しでまさにそれができる。
 
-First, you call `getaddrinfo()` to load up a `struct sockaddr` with the
-destination address and port information. Then you call `socket()` to
-get a socket descriptor, and then you pass the socket and address into
-`bind()`, and the IP address and port are magically (using actual magic)
-bound to the socket!
+まず `getaddrinfo()` を呼んで、接続先アドレスとポート情報を `struct sockaddr` に詰める。次に `socket()` でソケット記述子を取得し、ソケットとアドレスを `bind()` に渡すと、IP アドレスとポートが魔法（本物の魔法）でソケットに結び付けられる！
 
-If you don't know your IP address, or you know you only have one IP
-address on the machine, or you don't care which of the machine's IP
-addresses is used, you can simply pass the `AI_PASSIVE` flag in the
-`hints` parameter to `getaddrinfo()`. What this does is fill in the IP
-address part of the `struct sockaddr` with a special value that tells
-`bind()` that it should automatically fill in this host's IP address.
+IP アドレスが分からない、マシンに IP が 1 つしかない、どの IP を使うか気にしない、という場合は、`getaddrinfo()` の `hints` パラメータに `AI_PASSIVE` フラグを渡せばいい。こうすると `struct sockaddr` の IP アドレス部分に特別な値が入り、`bind()` にこのホストの IP アドレスを自動入力させるよう指示できる。
 
-What what? What special value is loaded into the `struct sockaddr`'s IP
-address to cause it to auto-fill the address with the current host? I'll
-tell you, but keep in mind this is only if you're filling out the
-`struct sockaddr` by hand; if not, use the results from `getaddrinfo()`,
-as per above. In IPv4, the `sin_addr.s_addr` field of the `struct
-sockaddr_in` structure is set to `INADDR_ANY`. In IPv6, the `sin6_addr`
-field of the `struct sockaddr_in6` structure is assigned into from the
-global variable `in6addr_any`. Or, if you're declaring a new `struct
-in6_addr`, you can initialize it to `IN6ADDR_ANY_INIT`.
+え、何？ `struct sockaddr` の IP アドレスにどんな特別な値が入って、現在のホストのアドレスを自動入力させるの？ 教えるが、`struct sockaddr` を手で埋めている場合だけだ。そうでなければ上記のとおり `getaddrinfo()` の結果を使え。IPv4 では `struct sockaddr_in` の `sin_addr.s_addr` フィールドに `INADDR_ANY` を設定する。IPv6 では `struct sockaddr_in6` の `sin6_addr` フィールドにグローバル変数 `in6addr_any` を代入する。あるいは新しい `struct in6_addr` を宣言するなら `IN6ADDR_ANY_INIT` で初期化できる。
 
-Lastly, the `addrlen` parameter should be set to `sizeof my_addr`.
+最後に、`addrlen` パラメータは `sizeof my_addr` に設定する。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns zero on success, or `-1` on error (and `errno` will be set
-accordingly).
+成功時は 0、エラー時は `-1`（`errno` が適切に設定される）。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 // modern way of doing things with getaddrinfo()
@@ -234,7 +177,7 @@ s = socket(PF_INET, SOCK_STREAM, 0);
 bind(s, (struct sockaddr*)&myaddr, sizeof myaddr);
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`getaddrinfo()`](#getaddrinfoman), [`socket()`](#socketman), [`struct
 sockaddr_in`](#structsockaddrman), [`struct in_addr`](#structsockaddrman)
@@ -245,9 +188,9 @@ sockaddr_in`](#structsockaddrman), [`struct in_addr`](#structsockaddrman)
 
 [i[`connect()` function]i]
 
-Connect a socket to a server
+ソケットをサーバーに接続する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/types.h>
@@ -257,40 +200,23 @@ int connect(int sockfd, const struct sockaddr *serv_addr,
             socklen_t addrlen);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-Once you've built a socket descriptor with the `socket()` call, you can
-`connect()` that socket to a remote server using the well-named
-`connect()` system call. All you need to do is pass it the socket
-descriptor and the address of the server you're interested in getting to
-know better. (Oh, and the length of the address, which is commonly
-passed to functions like this.)
+`socket()` 呼び出しでソケット記述子を作ったら、名前のとおり `connect()` システムコールでそのソケットをリモートサーバーに `connect()` できる。ソケット記述子と、接続したいサーバーのアドレスを渡すだけ（あと、この種の関数によく渡されるアドレスの長さも）。
 
-Usually this information comes along as the result of a call to
-`getaddrinfo()`, but you can fill out your own `struct sockaddr` if you
-want to.
+通常この情報は `getaddrinfo()` の結果として得られるが、自分で `struct sockaddr` を埋めてもいい。
 
-If you haven't yet called `bind()` on the socket descriptor, it is
-automatically bound to your IP address and a random local port. This is
-usually just fine with you if you're not a server, since you really
-don't care what your local port is; you only care what the remote port
-is so you can put it in the `serv_addr` parameter. You _can_ call
-`bind()` if you really want your client socket to be on a specific IP
-address and port, but this is pretty rare.
+ソケット記述子にまだ `bind()` を呼んでいなければ、自動的に自分の IP アドレスとランダムなローカルポートに結び付けられる。サーバーでなければ、ローカルポートが何番かはたいてい気にしないので問題ない。気になるのはリモートポートで、それを `serv_addr` パラメータに入れる。特定の IP とポートにクライアントソケットを置きたければ `bind()` もできるが、かなりレア。
 
-Once the socket is `connect()`ed, you're free to `send()` and `recv()`
-data on it to your heart's content.
+ソケットが `connect()` されたら、好きなだけ `send()` や `recv()` でデータをやり取りできる。
 
-[i[`connect()`-->on datagram sockets]] Special note: if you `connect()`
-a `SOCK_DGRAM` UDP socket to a remote host, you can use `send()` and
-`recv()` as well as `sendto()` and `recvfrom()`. If you want.
+[i[`connect()`-->on datagram sockets]] 特記：`SOCK_DGRAM` UDP ソケットをリモートホストに `connect()` すると、`sendto()` や `recvfrom()` に加えて `send()` や `recv()` も使える。好きなら。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns zero on success, or `-1` on error (and `errno` will be set
-accordingly).
+成功時は 0、エラー時は `-1`（`errno` が適切に設定される）。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 // connect to www.example.com port 80 (http)
@@ -316,7 +242,7 @@ sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 connect(sockfd, res->ai_addr, res->ai_addrlen);
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`socket()`](#socketman), [`bind()`](#bindman)
 
@@ -326,9 +252,9 @@ connect(sockfd, res->ai_addr, res->ai_addrlen);
 
 [i[`close()` function]i]
 
-Close a socket descriptor
+ソケット記述子を閉じる
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <unistd.h>
@@ -336,30 +262,19 @@ Close a socket descriptor
 int close(int s);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-After you've finished using the socket for whatever demented scheme you
-have concocted and you don't want to `send()` or `recv()` or, indeed, do
-_anything else_ at all with the socket, you can `close()` it, and it'll
-be freed up, never to be used again.
+考えついた狂った用途でソケットを使い終わり、もう `send()` や `recv()`、いやソケットで _何も_ したくないなら、`close()` すれば解放され、二度と使えなくなる。
 
-The remote side can tell if this happens one of two ways. One: if the
-remote side calls `recv()`, it will return `0`. Two: if the remote side
-calls `send()`, it'll receive a signal [i[`SIGPIPE` macro]] `SIGPIPE`
-and send() will return `-1` and `errno` will be set to [i[`EPIPE`
-macro]] `EPIPE`.
+リモート側は 2 通りでこれに気づける。1：`recv()` を呼ぶと `0` が返る。2：`send()` を呼ぶと [i[`SIGPIPE` macro]] `SIGPIPE` シグナルを受け取り、`send()` は `-1` を返して `errno` が [i[`EPIPE` macro]] `EPIPE` になる。
 
-[i[Windows]] **Windows users**: the function you need to use is called
-[i[`closesocket()` function]i] `closesocket()`, not `close()`. If you
-try to use `close()` on a socket descriptor, it's possible Windows will
-get angry... And you wouldn't like it when it's angry.
+[i[Windows]] **Windows ユーザー**：使う関数は `close()` ではなく [i[`closesocket()` function]i] `closesocket()` だ。ソケット記述子に `close()` を使うと Windows が怒るかもしれない……怒った Windows は見たくないだろう。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns zero on success, or `-1` on error (and `errno` will be set
-accordingly).
+成功時は 0、エラー時は `-1`（`errno` が適切に設定される）。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 s = socket(PF_INET, SOCK_DGRAM, 0);
@@ -373,7 +288,7 @@ s = socket(PF_INET, SOCK_DGRAM, 0);
 close(s);  // not much to it, really.
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`socket()`](#socketman), [`shutdown()`](#shutdownman)
 
@@ -385,10 +300,9 @@ close(s);  // not much to it, really.
 [i[`freeaddrinfo()` function]i]
 [i[`gai_strerror()` function]i]
 
-Get information about a host name and/or service and load up a `struct
-sockaddr` with the result.
+ホスト名やサービスに関する情報を取得し、結果を `struct sockaddr` に詰める。
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/types.h>
@@ -416,84 +330,41 @@ struct addrinfo {
 };
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-`getaddrinfo()` is an excellent function that will return information on
-a particular host name (such as its IP address) and load up a `struct
-sockaddr` for you, taking care of the gritty details (like if its IPv4
-or IPv6). It replaces the old functions `gethostbyname()` and
-`getservbyname()`.The description, below, contains a lot of information
-that might be a little daunting, but actual usage is pretty simple. It
-might be worth it to check out the examples first.
+`getaddrinfo()` は優秀な関数で、特定のホスト名（IP アドレスなど）の情報を返し、細かい部分（IPv4 か IPv6 かなど）を面倒見て `struct sockaddr` を用意してくれる。古い `gethostbyname()` と `getservbyname()` の代わりだ。以下の説明は情報量が多くて少し圧倒されるかもしれないが、実際の使い方はかなりシンプル。まずサンプルを見る価値はある。
 
-The host name that you're interested in goes in the `nodename`
-parameter. The address can be either a host name, like
-"www.example.com", or an IPv4 or IPv6 address (passed as a string). This
-parameter can also be `NULL` if you're using the `AI_PASSIVE` flag (see
-below).
+関心のあるホスト名は `nodename` パラメータに入れる。アドレスは "www.example.com" のようなホスト名でも、文字列として渡された IPv4/IPv6 アドレスでもよい。下記の `AI_PASSIVE` フラグを使うなら、このパラメータは `NULL` でもよい。
 
-The `servname` parameter is basically the port number. It can be a port
-number (passed as a string, like "80"), or it can be a service name,
-like "http" or "tftp" or "smtp" or "pop", etc. Well-known service names
-can be found in the [fl[IANA Port
-List|https://www.iana.org/assignments/port-numbers]] or in your
-`/etc/services` file.
+`servname` パラメータは基本的にポート番号。"80" のように文字列のポート番号でも、"http" や "tftp" や "smtp" や "pop" などのサービス名でもよい。よく知られたサービス名は [fl[IANA Port List|https://www.iana.org/assignments/port-numbers]] や `/etc/services` にある。
 
-Lastly, for input parameters, we have `hints`. This is really where you
-get to define what the `getaddrinfo()` function is going to do. Zero the
-whole structure before use with `memset()`. Let's take a look at the
-fields you need to set up before use.
+最後に入力パラメータとして `hints` がある。ここで `getaddrinfo()` に何をさせるか定義する。使う前に `memset()` で構造体全体をゼロにしよう。使う前に設定するフィールドを見ていく。
 
-The `ai_flags` can be set to a variety of things, but here are a couple
-important ones. (Multiple flags can be specified by bitwise-ORing them
-together with the `|` operator). Check your man page for the complete
-list of flags.
+`ai_flags` にはいろいろ設定できるが、重要なものをいくつか。（複数フラグは `|` でビット OR できる。完全なリストはマンページを確認。）
 
-`AI_CANONNAME` causes the `ai_canonname` of the result to the filled out
-with the host's canonical (real) name. `AI_PASSIVE` causes the result's
-IP address to be filled out with `INADDR_ANY` (IPv4) or `in6addr_any`
-(IPv6); this causes a subsequent call to `bind()` to auto-fill the IP
-address of the `struct sockaddr` with the address of the current host.
-That's excellent for setting up a server when you don't want to hardcode
-the address.
+`AI_CANONNAME` は結果の `ai_canonname` にホストの正規（本当の）名前を入れる。`AI_PASSIVE` は結果の IP アドレスを `INADDR_ANY`（IPv4）または `in6addr_any`（IPv6）で埋める。続く `bind()` で `struct sockaddr` の IP アドレスを現在のホストのアドレスで自動入力させる。アドレスをハードコードしたくないサーバー設定に最適。
 
-If you do use the `AI_PASSIVE`, flag, then you can pass `NULL` in the
-`nodename` (since `bind()` will fill it in for you later).
+`AI_PASSIVE` フラグを使うなら、`nodename` に `NULL` を渡せる（後で `bind()` が埋めてくれるから）。
 
-Continuing on with the input parameters, you'll likely want to set
-`ai_family` to `AF_UNSPEC` which tells `getaddrinfo()` to look for both
-IPv4 and IPv6 addresses. You can also restrict yourself to one or the
-other with `AF_INET` or `AF_INET6`.
+入力パラメータの続きとして、`ai_family` は `AF_UNSPEC` にすると IPv4 と IPv6 の両方を探す。`AF_INET` か `AF_INET6` で片方に限定もできる。
 
-Next, the `socktype` field should be set to `SOCK_STREAM` or
-`SOCK_DGRAM`, depending on which type of socket you want.
+次に `socktype` フィールドは、欲しいソケットの種類に応じて `SOCK_STREAM` か `SOCK_DGRAM` を設定する。
 
-Finally, just leave `ai_protocol` at `0` to automatically choose your
-protocol type.
+最後に `ai_protocol` は `0` のままで、プロトコル種別を自動選択させればよい。
 
-Now, after you get all that stuff in there, you can _finally_ make the
-call to `getaddrinfo()`!
+ここまで詰めたら、_ついに_ `getaddrinfo()` を呼べる！
 
-Of course, this is where the fun begins. The `res` will now point to a
-linked list of `struct addrinfo`s, and you can go through this list to
-get all the addresses that match what you passed in with the hints.
+もちろんここからが本番。`res` は `struct addrinfo` のリンクリストを指し、`hints` で渡した条件に合うアドレスを全部たどれる。
 
-Now, it's possible to get some addresses that don't work for one reason
-or another, so what the Linux man page does is loops through the list
-doing a call to `socket()` and `connect()` (or `bind()` if you're
-setting up a server with the `AI_PASSIVE` flag) until it succeeds.
+理由のいずれかで使えないアドレスが混ざることもある。Linux のマンページでは、リストをループして `socket()` と `connect()`（`AI_PASSIVE` でサーバーを立てるなら `bind()`）を成功するまで呼ぶ、というやり方をしている。
 
-Finally, when you're done with the linked list, you need to call
-`freeaddrinfo()` to free up the memory (or it will be leaked, and Some
-People will get upset).
+最後にリンクリストを使い終わったら `freeaddrinfo()` でメモリを解放する（しないとリークして、Some People が怒る）。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns zero on success, or nonzero on error. If it returns nonzero, you
-can use the function `gai_strerror()` to get a printable version of the
-error code in the return value.
+成功時は 0、エラー時は非ゼロ。非ゼロなら `gai_strerror()` で返り値のエラーコードを表示可能な文字列にできる。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 // code for a client connecting to a server
@@ -585,7 +456,7 @@ if (p == NULL) {
 freeaddrinfo(servinfo); // all done with this structure
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`gethostbyname()`](#gethostbynameman), [`getnameinfo()`](#getnameinfoman)
 
@@ -595,9 +466,9 @@ freeaddrinfo(servinfo); // all done with this structure
 
 [i[`gethostname()` function]i]
 
-Returns the name of the system
+システムの名前を返す
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/unistd.h>
@@ -605,28 +476,19 @@ Returns the name of the system
 int gethostname(char *name, size_t len);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-Your system has a name. They all do. This is a slightly more Unixy thing
-than the rest of the networky stuff we've been talking about, but it
-still has its uses.
+システムには名前がある。みんなそうだ。ここまで話してきたネットワーク系より Unix っぽい話だが、用途はある。
 
-For instance, you can get your host name, and then call
-[i[`gethostbyname()` function]] `gethostbyname()` to find out your IP
-address.
+例えばホスト名を取得してから [i[`gethostbyname()` function]] `gethostbyname()` を呼べば、自分の IP アドレスが分かる。
 
-The parameter `name` should point to a buffer that will hold the host
-name, and `len` is the size of that buffer in bytes. `gethostname()`
-won't overwrite the end of the buffer (it might return an error, or it
-might just stop writing), and it will `NUL`-terminate the string if
-there's room for it in the buffer.
+パラメータ `name` はホスト名を入れるバッファを指し、`len` はそのバッファのバイト数。`gethostname()` はバッファ末尾を上書きしない（エラーを返すか、書き込みを止める）。バッファに余裕があれば文字列は `NUL` 終端される。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns zero on success, or `-1` on error (and `errno` will be set
-accordingly).
+成功時は 0、エラー時は `-1`（`errno` が適切に設定される）。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 char hostname[128];
@@ -635,7 +497,7 @@ gethostname(hostname, sizeof hostname);
 printf("My hostname: %s\n", hostname);
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`gethostbyname()`](#gethostbynameman)
 
@@ -646,9 +508,9 @@ printf("My hostname: %s\n", hostname);
 [i[`gethostbyname()` function]i]
 [i[`gethostbyaddr()` function]i]
 
-Get an IP address for a hostname, or vice-versa
+ホスト名から IP アドレスを、またはその逆を取得する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/socket.h>
@@ -658,66 +520,38 @@ struct hostent *gethostbyname(const char *name); // DEPRECATED!
 struct hostent *gethostbyaddr(const char *addr, int len, int type);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-_PLEASE NOTE: these two functions are superseded by `getaddrinfo()` and
-`getnameinfo()`!_  In particular, `gethostbyname()` doesn't work well
-with IPv6.
+_注意：これら 2 関数は `getaddrinfo()` と `getnameinfo()` に置き換えられた！_ 特に `gethostbyname()` は IPv6 向きではない。
 
-These functions map back and forth between host names and IP addresses.
-For instance, if you have "www.example.com", you can use
-`gethostbyname()` to get its IP address and store it in a `struct
-in_addr`.
+これらの関数はホスト名と IP アドレスを相互に変換する。例えば "www.example.com" があれば、`gethostbyname()` で IP アドレスを取得して `struct in_addr` に保存できる。
 
-Conversely, if you have a `struct in_addr` or a `struct in6_addr`, you
-can use `gethostbyaddr()` to get the hostname back. `gethostbyaddr()`
-_is_ IPv6 compatible, but you should use the newer shinier
-`getnameinfo()` instead.
+逆に `struct in_addr` や `struct in6_addr` があれば、`gethostbyaddr()` でホスト名を取り戻せる。`gethostbyaddr()` は IPv6 対応だが、新しい `getnameinfo()` を使うべき。
 
-(If you have a string containing an IP address in dots-and-numbers
-format that you want to look up the hostname of, you'd be better off
-using `getaddrinfo()` with the `AI_CANONNAME` flag.)
+（ドット区切り数字形式の IP 文字列からホスト名を調べたいなら、`AI_CANONNAME` フラグ付きの `getaddrinfo()` の方がよい。）
 
-`gethostbyname()` takes a string like "www.yahoo.com", and returns a
-`struct hostent` which contains tons of information, including the IP
-address. (Other information is the official host name, a list of
-aliases, the address type, the length of the addresses, and the list of
-addresses---it's a general-purpose structure that's pretty easy to use
-for our specific purposes once you see how.)
+`gethostbyname()` は "www.yahoo.com" のような文字列を受け取り、IP アドレスを含む大量の情報が入った `struct hostent` を返す。（他に正規ホスト名、エイリアス一覧、アドレス型、アドレス長、アドレス一覧など——一度構造が分かれば目的にはかなり使いやすい汎用構造体だ。）
 
-`gethostbyaddr()` takes a `struct in_addr` or `struct in6_addr` and
-brings you up a corresponding host name (if there is one), so it's sort
-of the reverse of `gethostbyname()`. As for parameters, even though
-`addr` is a `char*`, you actually want to pass in a pointer to a `struct
-in_addr`. `len` should be `sizeof(struct in_addr)`, and `type` should be
-`AF_INET`.
+`gethostbyaddr()` は `struct in_addr` か `struct in6_addr` を受け取り、対応するホスト名（あれば）を返す。`gethostbyname()` の逆だ。パラメータとして `addr` は `char*` だが、実際には `struct in_addr` へのポインタを渡す。`len` は `sizeof(struct in_addr)`、`type` は `AF_INET` にする。
 
-So what is this [i[`struct hostent` type]i] `struct hostent` that gets
-returned? It has a number of fields that contain information about the
-host in question.
+返ってくる [i[`struct hostent` type]i] `struct hostent` とは？ ホストに関する情報が入ったフィールドの集まりだ。
 
-| Field                | Description                                       |
+| フィールド                | 説明                                       |
 |----------------------|---------------------------------------------------|
-| `char *h_name`       | The real canonical host name.                     |
-| `char **h_aliases`   | A list of aliases that can be accessed with arrays---the last element is `NULL` |
-| `int h_addrtype`     | The result's address type, which really should be `AF_INET` for our purposes. |
-| `int length`         | The length of the addresses in bytes, which is 4 for IP (version 4) addresses. |
-| `char **h_addr_list` | A list of IP addresses for this host. Although this is a `char**`, it's really an array of `struct in_addr*`s in disguise. The last array element is `NULL`. |
-| `h_addr`             | A commonly defined alias for `h_addr_list[0]`. If you just want any old IP address for this host (yeah, they can have more than one) just use this field. |
+| `char *h_name`       | 正規のホスト名。                     |
+| `char **h_aliases`   | エイリアス一覧。配列でアクセス——最後の要素は `NULL` |
+| `int h_addrtype`     | 結果のアドレス型。ここではたいてい `AF_INET`。 |
+| `int length`         | アドレスのバイト長。IP（バージョン 4）なら 4。 |
+| `char **h_addr_list` | このホストの IP アドレス一覧。`char**` だが、実体は `struct in_addr*` の配列の変装。最後は `NULL`。 |
+| `h_addr`             | `h_addr_list[0]` のよくある別名。このホストの IP が複数あっても、とにかく 1 つ欲しければこのフィールドでよい。 |
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns a pointer to a resultant `struct hostent` on success, or `NULL`
-on error.
+成功時は `struct hostent` へのポインタ、エラー時は `NULL`。
 
-Instead of the normal `perror()` and all that stuff you'd normally use
-for error reporting, these functions have parallel results in the
-variable `h_errno`, which can be printed using the functions
-[i[`herror()` function]i] `herror()` or [i[`hstrerror()` function]i]
-`hstrerror()`.  These work just like the classic `errno`, `perror()`,
-and `strerror()` functions you're used to.
+通常の `perror()` などではなく、これらの関数は `h_errno` 変数に並行する結果を持つ。[i[`herror()` function]i] `herror()` や [i[`hstrerror()` function]i] `hstrerror()` で表示できる。おなじみの `errno`、`perror()`、`strerror()` と同じ要領だ。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 // THIS IS A DEPRECATED METHOD OF GETTING HOST NAMES
@@ -777,7 +611,7 @@ he = gethostbyaddr(&ipv6addr, sizeof ipv6addr, AF_INET6);
 printf("Host name: %s\n", he->h_name);
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`getaddrinfo()`](#getaddrinfoman), [`getnameinfo()`](#getnameinfoman),
 [`gethostname()`](#gethostnameman), [`errno`](#errnoman),
@@ -790,10 +624,9 @@ in_addr`](#structsockaddrman)
 
 [i[`getnameinfo()` function]i]
 
-Look up the host name and service name information for a given `struct
-sockaddr`.
+与えられた `struct sockaddr` についてホスト名とサービス名を調べる。
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/socket.h>
@@ -804,40 +637,25 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
                 char *serv, size_t servlen, int flags);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-This function is the opposite of `getaddrinfo()`, that is, this function
-takes an already loaded `struct sockaddr` and does a name and service
-name lookup on it. It replaces the old `gethostbyaddr()` and
-`getservbyport()` functions.
+`getaddrinfo()` の逆で、すでに埋まった `struct sockaddr` から名前とサービス名のルックアップを行う。古い `gethostbyaddr()` と `getservbyport()` の代わり。
 
-You have to pass in a pointer to a `struct sockaddr` (which in actuality
-is probably a `struct sockaddr_in` or `struct sockaddr_in6` that you've
-cast) in the `sa` parameter, and the length of that `struct` in the
-`salen`.
+`sa` には（実際はたいていキャストした `struct sockaddr_in` か `struct sockaddr_in6` だろう）`struct sockaddr` へのポインタを、`salen` にはその `struct` の長さを渡す。
 
-The resultant host name and service name will be written to the area
-pointed to by the `host` and `serv` parameters. Of course, you have to
-specify the max lengths of these buffers in `hostlen` and `servlen`.
+結果のホスト名とサービス名は `host` と `serv` が指す領域に書き込まれる。`hostlen` と `servlen` で各バッファの最大長を指定する必要がある。
 
-Finally, there are several flags you can pass, but here a a couple good
-ones.  `NI_NOFQDN` will cause the `host` to only contain the host name,
-not the whole domain name. `NI_NAMEREQD` will cause the function to fail
-if the name cannot be found with a DNS lookup (if you don't specify this
-flag and the name can't be found, `getnameinfo()` will put a string
-version of the IP address in `host` instead).
+最後に渡せるフラグがいくつかあるが、よく使うものを 2 つ。`NI_NOFQDN` は `host` にドメイン全体ではなくホスト名だけを入れる。`NI_NAMEREQD` は DNS で名前が見つからないと関数を失敗させる（このフラグを付けずに名前が見つからない場合、`getnameinfo()` は代わりに `host` に IP アドレスの文字列版を入れる）。
 
-As always, check your local man pages for the full scoop.
+いつものように、詳細はローカルのマンページを確認。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns zero on success, or non-zero on error. If the return value is
-non-zero, it can be passed to `gai_strerror()` to get a human-readable
-string. See `getaddrinfo` for more information.
+成功時は 0、エラー時は非ゼロ。非ゼロなら `gai_strerror()` に渡して人間が読める文字列にできる。詳細は `getaddrinfo` を参照。
 
 [[book-pagebreak]]
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 struct sockaddr_in6 sa; // could be IPv4 if you want
@@ -853,7 +671,7 @@ printf("   host: %s\n", host);    // e.g. "www.example.com"
 printf("service: %s\n", service); // e.g. "http"
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`getaddrinfo()`](#getaddrinfoman), [`gethostbyaddr()`](#gethostbynameman)
 
@@ -863,9 +681,9 @@ printf("service: %s\n", service); // e.g. "http"
 
 [i[`getpeername()` function]i]
 
-Return address info about the remote side of the connection
+接続のリモート側についてアドレス情報を返す
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/socket.h>
@@ -873,30 +691,21 @@ Return address info about the remote side of the connection
 int getpeername(int s, struct sockaddr *addr, socklen_t *len);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-Once you have either `accept()`ed a remote connection, or `connect()`ed
-to a server, you now have what is known as a _peer_. Your peer is simply
-the computer you're connected to, identified by an IP address and a
-port. So...
+リモート接続を `accept()` したか、サーバーに `connect()` したら、いわゆる _ピア_ ができる。ピアとは接続先のコンピュータで、IP アドレスとポートで識別される。だから……
 
-`getpeername()` simply returns a `struct sockaddr_in` filled with
-information about the machine you're connected to.
+`getpeername()` は、接続している相手の情報が入った `struct sockaddr_in` を返すだけだ。
 
-Why is it called a "name"? Well, there are a lot of different kinds of
-sockets, not just Internet Sockets like we're using in this guide, and
-so "name" was a nice generic term that covered all cases. In our case,
-though, the peer's "name" is it's IP address and port.
+なぜ "name" なのか？ ソケットにはこのガイドで使っているインターネットソケット以外にもいろいろあり、"name" はすべてのケースをカバーする汎用語として都合がよかった。ここではピアの "name" は IP アドレスとポートだ。
 
-Although the function returns the size of the resultant address in
-`len`, you must preload `len` with the size of `addr`.
+関数は `len` に結果のアドレスサイズを返すが、`len` には事前に `addr` のサイズを入れておく必要がある。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns zero on success, or `-1` on error (and `errno` will be set
-accordingly).
+成功時は 0、エラー時は `-1`（`errno` が適切に設定される）。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 // assume s is a connected socket
@@ -924,7 +733,7 @@ printf("Peer IP address: %s\n", ipstr);
 printf("Peer port      : %d\n", port);
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`gethostname()`](#gethostnameman), [`gethostbyname()`](#gethostbynameman),
 [`gethostbyaddr()`](#gethostbynameman)
@@ -935,9 +744,9 @@ printf("Peer port      : %d\n", port);
 
 [i[`errno` variable]i]
 
-Holds the error code for the last system call
+直前のシステムコールのエラーコードを保持する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <errno.h>
@@ -945,33 +754,21 @@ Holds the error code for the last system call
 int errno;
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-This is the variable that holds error information for a lot of system
-calls. If you'll recall, things like `socket()` and `listen()` return
-`-1` on error, and they set the exact value of `errno` to let you know
-specifically which error occurred.
+多くのシステムコールのエラー情報を保持する変数だ。覚えているだろう、`socket()` や `listen()` はエラー時に `-1` を返し、どのエラーかを示すよう `errno` に正確な値を設定する。
 
-The header file `errno.h` lists a bunch of constant symbolic names for
-errors, such as `EADDRINUSE`, `EPIPE`, `ECONNREFUSED`, etc. Your local
-man pages will tell you what codes can be returned as an error, and you
-can use these at run time to handle different errors in different ways.
+ヘッダ `errno.h` には `EADDRINUSE`、`EPIPE`、`ECONNREFUSED` などの定数シンボル名が並ぶ。ローカルのマンページで返りうるコードを確認し、実行時にエラーごとに処理を分けられる。
 
-Or, more commonly, you can call [i[`perror()` function]] `perror()` or
-[i[`strerror()` function]] `strerror()` to get a human-readable version
-of the error.
+もっと一般的には [i[`perror()` function]] `perror()` や [i[`strerror()` function]] `strerror()` を呼んで、人間が読めるエラー文字列を得る。
 
-One thing to note, for you multithreading enthusiasts, is that on most
-systems `errno` is defined in a threadsafe manner. (That is, it's not
-actually a global variable, but it behaves just like a global variable
-would in a single-threaded environment.)
+マルチスレッド好きの人向け：`errno` は多くのシステムでスレッドセーフに定義されている（グローバル変数そのものではないが、シングルスレッド環境ではグローバル変数と同じように振る舞う）。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-The value of the variable is the latest error to have transpired, which
-might be the code for "success" if the last action succeeded.
+変数の値は直近のエラーで、直前の操作が成功していれば "success" のコードかもしれない。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 s = socket(PF_INET, SOCK_STREAM, 0);
@@ -992,7 +789,7 @@ if (select(n, &readfds, NULL, NULL) == -1) {
 }
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`perror()`](#perrorman), [`strerror()`](#perrorman)
 
@@ -1002,9 +799,9 @@ if (select(n, &readfds, NULL, NULL) == -1) {
 
 [i[`fcntl()` function]i]
 
-Control socket descriptors
+ソケット記述子を制御する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/unistd.h>
@@ -1013,32 +810,24 @@ Control socket descriptors
 int fcntl(int s, int cmd, long arg);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-This function is typically used to do file locking and other
-file-oriented stuff, but it also has a couple socket-related functions
-that you might see or use from time to time.
+この関数はファイルロックなどファイル向けの用途が典型だが、ソケット関連の機能もいくつかあり、たまに目にする。
 
-Parameter `s` is the socket descriptor you wish to operate on, `cmd`
-should be set to [i[`F_SETFL` macro]i] `F_SETFL`, and `arg` can be one of
-the following commands. (Like I said, there's more to `fcntl()` than I'm
-letting on here, but I'm trying to stay socket-oriented.)
+パラメータ `s` は操作対象のソケット記述子、`cmd` は [i[`F_SETFL` macro]i] `F_SETFL` に設定し、`arg` は次のコマンドのいずれか。（`fcntl()` にはここで触れない部分ももっとあるが、ソケット向けに留める。）
 
-| `cmd`        | Description                                                |
+| `cmd`        | 説明                                                |
 |--------------|------------------------------------------------------------|
-| [i[`O_NONBLOCK` macro]i]`O_NONBLOCK` | Set the socket to be non-blocking. See the section on [blocking](#blocking) for more details.|
-| [i[`O_ASYNC` macro]i]`O_ASYNC`    | Set the socket to do asynchronous I/O. When data is ready to be `recv()`'d on the socket, the signal [i[`SIGIO` signal]] `SIGIO` will be raised. This is rare to see, and beyond the scope of the guide. And I think it's only available on certain systems.|
+| [i[`O_NONBLOCK` macro]i]`O_NONBLOCK` | ソケットを非ブロッキングにする。詳細は [blocking](#blocking) の節を参照。|
+| [i[`O_ASYNC` macro]i]`O_ASYNC`    | ソケットを非同期 I/O にする。ソケットで `recv()` 可能なデータが来ると [i[`SIGIO` signal]] `SIGIO` が上がる。あまり見ない用途で、ガイドの範囲外。特定システムでのみ利用可能かもしれない。|
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns zero on success, or `-1` on error (and `errno` will be set
-accordingly).
+成功時は 0、エラー時は `-1`（`errno` が適切に設定される）。
 
-Different uses of the `fcntl()` system call actually have different
-return values, but I haven't covered them here because they're not
-socket-related. See your local `fcntl()` man page for more information.
+`fcntl()` の用途によって返り値は異なるが、ここではソケット関連以外は触れていない。詳細はローカルの `fcntl()` マンページを参照。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 int s = socket(PF_INET, SOCK_STREAM, 0);
@@ -1047,7 +836,7 @@ fcntl(s, F_SETFL, O_NONBLOCK);  // set to non-blocking
 fcntl(s, F_SETFL, O_ASYNC);     // set to asynchronous I/O
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [Blocking](#blocking), [`send()`](#sendman)
 
@@ -1060,9 +849,9 @@ fcntl(s, F_SETFL, O_ASYNC);     // set to asynchronous I/O
 [i[`ntohs()` function]i]
 [i[`ntohl()` function]i]
 
-Convert multi-byte integer types from host byte order to network byte order
+マルチバイト整数型をホストバイト順からネットワークバイト順へ変換する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <netinet/in.h>
@@ -1073,61 +862,32 @@ uint32_t ntohl(uint32_t netlong);
 uint16_t ntohs(uint16_t netshort);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-Just to make you really unhappy, different computers use different byte
-orderings internally for their multibyte integers (i.e. any integer
-that's larger than a `char`).  The upshot of this is that if you
-`send()` a two-byte `short int` from an Intel box to a Mac (before they
-became Intel boxes, too, I mean), what one computer thinks is the number
-`1`, the other will think is the number `256`, and vice-versa.
+不快な話だが、マルチバイト整数（`char` より大きい整数）の内部バイト順はマシンごとに違う。Intel マシンから Mac（Intel 化前の話）へ 2 バイトの `short int` を `send()` すると、一方では `1`、もう一方では `256` と解釈される、ということが起きうる。
 
-[i[Byte ordering]] The way to get around this problem is for everyone to
-put aside their differences and agree that Motorola and IBM had it
-right, and Intel did it the weird way, and so we all convert our byte
-orderings to "big-endian" before sending them out. Since Intel is a
-"little-endian" machine, it's far more politically correct to call our
-preferred byte ordering "Network Byte Order". So these functions convert
-from your native byte order to network byte order and back again.
+[i[Byte ordering]] 回避策は、Motorola と IBM が正しく Intel が変だった、とみんなで合意し、送る前にすべて "big-endian"（ビッグエンディアン）に揃えること。Intel は "little-endian" なので、政治的には "Network Byte Order"（ネットワークバイト順）と呼ぶ方が正しい。これらの関数はネイティブバイト順とネットワークバイト順を相互変換する。
 
-(This means on Intel these functions swap all the bytes around, and on
-PowerPC they do nothing because the bytes are already in Network Byte
-Order. But you should always use them in your code anyway, since someone
-might want to build it on an Intel machine and still have things work
-properly.)
+（Intel ではバイトを入れ替え、PowerPC ではすでに Network Byte Order なので何もしない。でも Intel 上でもちゃんと動くよう、コードでは常に使うべき。）
 
-Note that the types involved are 32-bit (4 byte, probably `int`) and
-16-bit (2 byte, very likely `short`) numbers.
+型は 32 ビット（4 バイト、たぶん `int`）と 16 ビット（2 バイト、たぶん `short`）の数値。
 
-There are 64-bit variants on various systems. Check out the
-[flm[`htobe64()`|htobe64]] function and its relatives in `<endian.h>` if
-you have it (which apparently MacOS doesn't). And GCC has [fl[byte
-swapping
-built-ins|https://gcc.gnu.org/onlinedocs/gcc/Byte-Swapping-Builtins.html]]
-that even go up to 128 bits. [flx[Or you can roll your own|htonll.c]],
-but only actually do the swap if you're on a little-endian machine!
+64 ビット版はシステムによってある。`<endian.h>` があれば [flm[`htobe64()`|htobe64]] 関数族を確認（MacOS にはないらしい）。GCC には 128 ビットまで行く [fl[byte swapping built-ins|https://gcc.gnu.org/onlinedocs/gcc/Byte-Swapping-Builtins.html]] もある。[flx[自分で書くこともできる|htonll.c]] が、リトルエンディアンマシンのときだけ実際にスワップすればよい！
 
-Anyway, the way these functions work is that you first decide if you're
-converting _from_ host (your machine's) byte order or from network byte
-order.  If "host", the the first letter of the function you're going to
-call is "h".  Otherwise it's "n" for "network". The middle of the
-function name is always "to" because you're converting from one "to"
-another, and the penultimate letter shows what you're converting _to_.
-The last letter is the size of the data, "s" for short, or "l" for long.
-Thus:
+関数の名前の付け方：ホスト（自分のマシン）のバイト順 _から_ 変換するなら最初の文字は "h"。ネットワークバイト順 _から_ なら "n"。真ん中は常に "to"。最後から 2 番目の文字は変換 _先_ を示す。末尾はデータサイズで "s" は short、"l" は long。つまり：
 
-| Function  | Description                   |
+| 関数  | 説明                   |
 |-----------|-------------------------------|
 | `htons()` | `h`ost `to` `n`etwork `s`hort |
 | `htonl()` | `h`ost `to` `n`etwork `l`ong  |
 | `ntohs()` | `n`etwork `to` `h`ost `s`hort |
 | `ntohl()` | `n`etwork `to` `h`ost `l`ong  |
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Each function returns the converted value.
+各関数は変換後の値を返す。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 uint32_t some_long = 10;
@@ -1150,10 +910,9 @@ some_short == ntohs(htons(some_short)); // this expression is true
 [i[`inet_aton()` function]i]
 [i[`inet_addr()` function]i]
 
-Convert IP addresses from a dots-and-number string to a `struct in_addr` and
-back
+ドット区切り数字の IP 文字列と `struct in_addr` を相互変換する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/socket.h>
@@ -1168,51 +927,27 @@ int inet_aton(const char *cp, struct in_addr *inp);
 in_addr_t inet_addr(const char *cp);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-_These functions are deprecated because they don't handle IPv6! Use
-[`inet_ntop()`](#inet_ntopman) or [`inet_pton()`](#inet_ntopman)
-instead! They are included here because they can still be found in the
-wild._
+_これらの関数は IPv6 を扱えないので非推奨！ [`inet_ntop()`](#inet_ntopman) か [`inet_pton()`](#inet_ntopman) を使え！ 野良コードにはまだ残っているのでここに載せている。_
 
-All of these functions convert from a `struct in_addr` (part of your
-`struct sockaddr_in`, most likely) to a string in dots-and-numbers
-format (e.g. "192.168.5.10") and vice-versa. If you have an IP address
-passed on the command line or something, this is the easiest way to get
-a `struct in_addr` to `connect()` to, or whatever. If you need more
-power, try some of the DNS functions like `gethostbyname()` or attempt a
-_coup d'État_ in your local country.
+これらは `struct in_addr`（たいてい `struct sockaddr_in` の一部）とドット区切り形式（例 "192.168.5.10"）の文字列を相互変換する。コマンドラインなどで IP 文字列が渡されたとき、`connect()` 先などに使う `struct in_addr` を得るいちばん簡単な方法。もっと力が要るなら `gethostbyname()` などの DNS 関数か、母国で _coup d'État_ を試みる。
 
-The function `inet_ntoa()` converts a network address in a `struct
-in_addr` to a dots-and-numbers format string. The "n" in "ntoa" stands
-for network, and the "a" stands for ASCII for historical reasons (so
-it's "Network To ASCII"---the "toa" suffix has an analogous friend in
-the C library called `atoi()` which converts an ASCII string to an
-integer).
+`inet_ntoa()` は `struct in_addr` 内のネットワークアドレスをドット区切り文字列に変換する。"ntoa" の "n" は network、"a" は歴史的に ASCII（つまり "Network To ASCII"）。"toa" 接尾辞には C ライブラリの `atoi()`（ASCII 文字列を整数に）という仲間がいる。
 
-The function `inet_aton()` is the opposite, converting from a
-dots-and-numbers string into a `in_addr_t` (which is the type of the
-field `s_addr` in your `struct in_addr`).
+`inet_aton()` はその逆で、ドット区切り文字列を `in_addr_t`（`struct in_addr` の `s_addr` フィールドの型）に変換する。
 
-Finally, the function `inet_addr()` is an older function that does
-basically the same thing as `inet_aton()`. It's theoretically
-deprecated, but you'll see it a lot and the police won't come get you if
-you use it.
+`inet_addr()` は `inet_aton()` とほぼ同じことをする古い関数。理論上は非推奨だが、よく見かける。使っても警察は来ない。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-`inet_aton()` returns non-zero if the address is a valid one, and it
-returns zero if the address is invalid.
+`inet_aton()` はアドレスが有効なら非ゼロ、無効なら 0。
 
-`inet_ntoa()` returns the dots-and-numbers string in a static buffer
-that is overwritten with each call to the function.
+`inet_ntoa()` はドット区切り文字列を静的バッファに返す。呼ぶたびに上書きされる。
 
-`inet_addr()` returns the address as an `in_addr_t`, or `-1` if there's
-an error. (That is the same result as if you tried to convert the string
-[i[`255.255.255.255`]] "`255.255.255.255`", which is a valid IP address.
-This is why `inet_aton()` is better.)
+`inet_addr()` は `in_addr_t` としてアドレスを返す。エラー時は `-1`。（有効な IP である [i[`255.255.255.255`]] "`255.255.255.255`" を変換しようとした場合と同じ結果になる。だから `inet_aton()` の方がよい。）
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 struct sockaddr_in antelope;
@@ -1227,7 +962,7 @@ printf("%s\n", some_addr); // prints "10.0.0.1"
 antelope.sin_addr.s_addr = inet_addr("10.0.0.1");
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`inet_ntop()`](#inet_ntopman), [`inet_pton()`](#inet_ntopman),
 [`gethostbyname()`](#gethostbynameman), [`gethostbyaddr()`](#gethostbynameman)
@@ -1239,9 +974,9 @@ antelope.sin_addr.s_addr = inet_addr("10.0.0.1");
 [i[`inet_ntop()` function]i]
 [i[`inet_pton()` function]i]
 
-Convert IP addresses to human-readable form and back.
+IP アドレスを人間が読める形式とバイナリ形式で相互変換する。
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <arpa/inet.h>
@@ -1252,53 +987,29 @@ const char *inet_ntop(int af, const void *src,
 int inet_pton(int af, const char *src, void *dst);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-These functions are for dealing with human-readable IP addresses and
-converting them to their binary representation for use with various
-functions and system calls. The "n" stands for "network", and "p" for
-"presentation". Or "text presentation". But you can think of it as
-"printable". "ntop" is "network to printable". See?
+人間が読める IP アドレスを、各種関数やシステムコールで使うバイナリ表現に変換する（およびその逆）ための関数。"n" は "network"、"p" は "presentation"（または "text presentation"）。"printable" と考えてもよい。"ntop" は "network to printable"。分かった？
 
-Sometimes you don't want to look at a pile of binary numbers when
-looking at an IP address. You want it in a nice printable form, like
-`192.0.2.180`, or `2001:db8:8714:3a90::12`. In that case, `inet_ntop()`
-is for you.
+IP アドレスをバイナリの山で見たくないとき、`192.0.2.180` や `2001:db8:8714:3a90::12` のようなきれいな形式が欲しい——その場合は `inet_ntop()`。
 
-`inet_ntop()` takes the address family in the `af` parameter (either
-`AF_INET` or `AF_INET6`). The `src` parameter should be a pointer to
-either a `struct in_addr` or `struct in6_addr` containing the address
-you wish to convert to a string. Finally `dst` and `size` are the
-pointer to the destination string and the maximum length of that string.
+`inet_ntop()` は `af` にアドレスファミリー（`AF_INET` か `AF_INET6`）を渡す。`src` は変換したいアドレスを持つ `struct in_addr` か `struct in6_addr` へのポインタ。`dst` と `size` は出力文字列のポインタと最大長。
 
-What should the maximum length of the `dst` string be? What is the
-maximum length for IPv4 and IPv6 addresses? Fortunately there are a
-couple of macros to help you out. The maximum lengths are:
-`INET_ADDRSTRLEN` and `INET6_ADDRSTRLEN`.
+`dst` の最大長は？ IPv4 と IPv6 で最大長は？ 助けになるマクロがある。最大長は `INET_ADDRSTRLEN` と `INET6_ADDRSTRLEN`。
 
-Other times, you might have a string containing an IP address in
-readable form, and you want to pack it into a `struct sockaddr_in` or a
-`struct sockaddr_in6`.  In that case, the opposite function
-`inet_pton()` is what you're after.
+逆に、読み取り可能な IP 文字列を `struct sockaddr_in` や `struct sockaddr_in6` に詰めたいなら、反対の `inet_pton()` を使う。
 
-`inet_pton()` also takes an address family (either `AF_INET` or
-`AF_INET6`) in the `af` parameter. The `src` parameter is a pointer to a
-string containing the IP address in printable form. Lastly the `dst`
-parameter points to where the result should be stored, which is probably
-a `struct in_addr` or `struct in6_addr`.
+`inet_pton()` も `af` に `AF_INET` か `AF_INET6`。`src` は読み取り可能形式の IP 文字列へのポインタ。`dst` は結果の保存先で、たいてい `struct in_addr` か `struct in6_addr`。
 
-These functions don't do DNS lookups---you'll need `getaddrinfo()` for
-that.
+これらの関数は DNS ルックアップはしない——それには `getaddrinfo()` が必要。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-`inet_ntop()` returns the `dst` parameter on success, or `NULL` on
-failure (and `errno` is set).
+`inet_ntop()` は成功時 `dst`、失敗時 `NULL`（`errno` が設定される）。
 
-`inet_pton()` returns `1` on success. It returns `-1` if there was an
-error (`errno` is set), or `0` if the input isn't a valid IP address.
+`inet_pton()` は成功時 `1`。エラー時 `-1`（`errno` 設定）、入力が有効な IP でない場合 `0`。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 // IPv4 demo of inet_ntop() and inet_pton()
@@ -1360,7 +1071,7 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
 }
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`getaddrinfo()`](#getaddrinfoman)
 
@@ -1371,9 +1082,9 @@ char *get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen)
 
 [i[`listen()` function]i]
 
-Tell a socket to listen for incoming connections
+ソケットに入ってくる接続の待ち受けを指示する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/socket.h>
@@ -1381,29 +1092,19 @@ Tell a socket to listen for incoming connections
 int listen(int s, int backlog);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-You can take your socket descriptor (made with the `socket()` system
-call) and tell it to listen for incoming connections. This is what
-differentiates the servers from the clients, guys.
+`socket()` システムコールで作ったソケット記述子に、入ってくる接続の待ち受けを指示できる。これがサーバーとクライアントを分けるところだ。
 
-The `backlog` parameter can mean a couple different things depending on
-the system you on, but loosely it is how many pending connections you
-can have before the kernel starts rejecting new ones. So as the new
-connections come in, you should be quick to `accept()` them so that the
-backlog doesn't fill. Try setting it to 10 or so, and if your clients
-start getting "Connection refused" under heavy load, set it higher.
+`backlog` パラメータの意味はシステムによって少し違うが、おおまかには、カーネルが新しい接続を拒否し始める前にキューに載せられる保留中の接続数だ。接続が来たら `accept()` を素早く呼んで backlog が溢れないようにしよう。10 前後から始め、高負荷でクライアントが "Connection refused" になるなら上げる。
 
-Before calling `listen()`, your server should call `bind()` to attach
-itself to a specific port number. That port number (on the server's IP
-address) will be the one that clients connect to.
+`listen()` の前に、サーバーは `bind()` で特定のポート番号に結び付けるべきだ。そのポート（サーバーの IP 上）がクライアントの接続先になる。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns zero on success, or `-1` on error (and `errno` will be set
-accordingly).
+成功時は 0、エラー時は `-1`（`errno` が適切に設定される）。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 struct addrinfo hints, *res;
@@ -1432,7 +1133,7 @@ listen(sockfd, 10); // set sockfd up to be a server socket
 // then have an accept() loop down here somewhere
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`accept()`](#acceptman), [`bind()`](#bindman), [`socket()`](#socketman)
 
@@ -1443,9 +1144,9 @@ listen(sockfd, 10); // set sockfd up to be a server socket
 [i[`perror()` function]i]
 [i[`strerror()` function]i]
 
-Print an error as a human-readable string
+エラーを人間が読める文字列として表示する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <stdio.h>
@@ -1455,28 +1156,21 @@ void perror(const char *s);
 char *strerror(int errnum);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-Since so many functions return `-1` on error and set the value of the
-variable [i[`errno` variable]] `errno` to be some number, it would sure
-be nice if you could easily print that in a form that made sense to you.
+多くの関数がエラー時に `-1` を返し、[i[`errno` variable]] `errno` に番号を入れるので、それを分かりやすく表示できたら便利だ。
 
-Mercifully, `perror()` does that. If you want more description to be
-printed before the error, you can point the parameter `s` to it (or you
-can leave `s` as `NULL` and nothing additional will be printed).
+`perror()` がそれをやる。エラーの前にもう少し説明を付けたいなら、パラメータ `s` に文字列を指させる（`NULL` のままなら追加表示はない）。
 
-In a nutshell, this function takes `errno` values, like `ECONNRESET`,
-and prints them nicely, like "Connection reset by peer."
+要するに、この関数は `ECONNRESET` のような `errno` 値を "Connection reset by peer." のようにきれいに表示する。
 
-The function `strerror()` is very similar to `perror()`, except it
-returns a pointer to the error message string for a given value (you
-usually pass in the variable `errno`).
+`strerror()` は `perror()` に似ているが、与えた値（通常は `errno`）に対応するエラーメッセージ文字列へのポインタを返す。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-`strerror()` returns a pointer to the error message string.
+`strerror()` はエラーメッセージ文字列へのポインタを返す。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 int s;
@@ -1495,7 +1189,7 @@ if (listen(s, 10) == -1) {
 }
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`errno`](#errnoman)
 
@@ -1505,9 +1199,9 @@ if (listen(s, 10) == -1) {
 
 [i[`poll()` function]i]
 
-Test for events on multiple sockets simultaneously
+複数のソケットで同時にイベントを待つ
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/poll.h>
@@ -1515,21 +1209,13 @@ Test for events on multiple sockets simultaneously
 int poll(struct pollfd *ufds, unsigned int nfds, int timeout);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-This function is very similar to `select()` in that they both watch sets
-of file descriptors for events, such as incoming data ready to `recv()`,
-socket ready to `send()` data to, out-of-band data ready to `recv()`,
-errors, etc.
+`select()` と非常に似ていて、どちらもファイル記述子の集合を監視し、受信可能なデータ、`send()` 可能な状態、帯域外データの受信準備、エラーなどのイベントを見る。
 
-The basic idea is that you pass an array of `nfds` `struct pollfd`s in
-`ufds`, along with a timeout in milliseconds (1000 milliseconds in a
-second). The `timeout` can be negative if you want to wait forever. If
-no event happens on any of the socket descriptors by the timeout,
-`poll()` will return.
+基本は `ufds` に `nfds` 個の `struct pollfd` の配列を渡し、タイムアウトをミリ秒で指定する（1 秒は 1000 ミリ秒）。永久に待つなら `timeout` を負にできる。タイムアウトまでにどのソケット記述子でもイベントがなければ `poll()` は戻る。
 
-Each element in the array of `struct pollfd`s represents one socket
-descriptor, and contains the following fields:
+`struct pollfd` の配列の各要素は 1 つのソケット記述子を表し、次のフィールドを持つ：
 
 [i[`struct pollfd` type]i]
 
@@ -1541,35 +1227,27 @@ struct pollfd {
 };
 ```
 
-Before calling `poll()`, load `fd` with the socket descriptor (if you
-set `fd` to a negative number, this `struct pollfd` is ignored and its
-`revents` field is set to zero) and then construct the `events` field by
-bitwise-ORing the following macros:
+`poll()` の前に `fd` にソケット記述子を入れる（`fd` を負の数にするとこの `struct pollfd` は無視され `revents` は 0）。`events` は次のマクロをビット OR して構築する：
 
-| Macro     | Description                                                  |
+| マクロ     | 説明                                                  |
 |-----------|--------------------------------------------------------------|
-| `POLLIN`  | Alert me when data is ready to `recv()` on this socket.      |
-| `POLLOUT` | Alert me when I can `send()` data to this socket without blocking.|
-| `POLLPRI` | Alert me when out-of-band data is ready to `recv()` on this socket.|
+| `POLLIN`  | このソケットで `recv()` 可能なデータが来たら知らせて。      |
+| `POLLOUT` | このソケットへブロックせず `send()` できるようになったら知らせて。|
+| `POLLPRI` | このソケットで帯域外データを `recv()` できるようになったら知らせて。|
 
-Once the `poll()` call returns, the `revents` field will be constructed
-as a bitwise-OR of the above fields, telling you which descriptors
-actually have had that event occur. Additionally, these other fields
-might be present:
+`poll()` から戻ると `revents` が上記フィールドのビット OR になり、どの記述子でどのイベントが起きたか分かる。加えて次のフィールドも現れることがある：
 
-| Macro      | Description                                                 |
+| マクロ      | 説明                                                 |
 |------------|-------------------------------------------------------------|
-| `POLLERR`  | An error has occurred on this socket.                       |
-| `POLLHUP`  | The remote side of the connection hung up.                  |
-| `POLLNVAL` | Something was wrong with the socket descriptor `fd`---maybe it's uninitialized?|
+| `POLLERR`  | このソケットでエラーが発生した。                       |
+| `POLLHUP`  | 接続のリモート側が切断した。                  |
+| `POLLNVAL` | ソケット記述子 `fd` に問題がある——未初期化？|
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns the number of elements in the `ufds` array that have had event
-occur on them; this can be zero if the timeout occurred. Also returns
-`-1` on error (and `errno` will be set accordingly).
+イベントが起きた `ufds` 配列の要素数を返す。タイムアウトなら 0。エラー時 `-1`（`errno` が適切に設定される）。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 int s1, s2;
@@ -1618,7 +1296,7 @@ if (rv == -1) {
 }
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`select()`](#selectman)
 
@@ -1629,9 +1307,9 @@ if (rv == -1) {
 [i[`recv()` function]i]
 [i[`recvfrom()` function]i]
 
-Receive data on a socket
+ソケットからデータを受信する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/types.h>
@@ -1642,51 +1320,31 @@ ssize_t recvfrom(int s, void *buf, size_t len, int flags,
                  struct sockaddr *from, socklen_t *fromlen);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-Once you have a socket up and
-connected, you can read incoming data from the remote side using the
-`recv()` (for TCP [i[`SOCK_STREAM` macro]] `SOCK_STREAM` sockets) and
-`recvfrom()` (for UDP [i[`SOCK_DGRAM` macro]] `SOCK_DGRAM` sockets).
+ソケットが起動して接続されたら、リモート側からのデータは `recv()`（TCP [i[`SOCK_STREAM` macro]] `SOCK_STREAM` ソケット）と `recvfrom()`（UDP [i[`SOCK_DGRAM` macro]] `SOCK_DGRAM` ソケット）で読める。
 
-Both functions take the socket descriptor `s`, a pointer to the buffer
-`buf`, the size (in bytes) of the buffer `len`, and a set of `flags`
-that control how the functions work.
+両関数ともソケット記述子 `s`、バッファ `buf` へのポインタ、バッファサイズ（バイト）`len`、動作を制御する `flags` を取る。
 
-Additionally, the `recvfrom()` takes a [i[`struct sockaddr` type]]
-`struct sockaddr*`, `from` that will tell you where the data came from,
-and will fill in `fromlen` with the size of `struct sockaddr`. (You must
-also initialize `fromlen` to be the size of `from` or `struct
-sockaddr`.)
+さらに `recvfrom()` は [i[`struct sockaddr` type]] `struct sockaddr*` の `from` でデータの送信元を教え、`fromlen` に `struct sockaddr` のサイズを入れる。（`fromlen` は `from` または `struct sockaddr` のサイズで初期化する必要もある。）
 
-So what wondrous flags can you pass into this function? Here are some of
-them, but you should check your local man pages for more information and
-what is actually supported on your system. You bitwise-or these
-together, or just set `flags` to `0` if you want it to be a regular
-vanilla `recv()`.
+渡せるフラグはいくつかあるが、ローカルのマンページで詳細とシステムでのサポートを確認してほしい。ビット OR するか、普通の `recv()` にしたければ `flags` を `0` にする。
 
-| Macro         | Description                                              |
+| マクロ         | 説明                                              |
 |---------------|----------------------------------------------------------|
-| [i[Out-of-band data]][i[`MSG_OOB` macro]i]`MSG_OOB` | Receive Out of Band data. This is how to get data that has been sent to you with the `MSG_OOB` flag in `send()`. As the receiving side, you will have had signal [i[`SIGURG` macro]i] `SIGURG` raised telling you there is urgent data. In your handler for that signal, you could call `recv()` with this `MSG_OOB` flag.|
-| [i[`MSG_PEEK` macro]i]`MSG_PEEK`                    | If you want to call `recv()` "just for pretend", you can call it with this flag. This will tell you what's waiting in the buffer for when you call `recv()` "for real" (i.e. _without_ the `MSG_PEEK` flag.) It's like a sneak preview into the next `recv()` call.| 
-| [i[`MSG_WAITALL` macro]i]`MSG_WAITALL`              | Tell `recv()` to not return until all the data you specified in the `len` parameter has been received. It will ignore your wishes in extreme circumstances, however, like if a signal interrupts the call or if some error occurs or if the remote side closes the connection, etc. Don't be mad with it.| 
+| [i[Out-of-band data]][i[`MSG_OOB` macro]i]`MSG_OOB` | 帯域外データを受信。`send()` で `MSG_OOB` フラグ付きで送られたデータを受け取る方法。受信側では緊急データがあると [i[`SIGURG` macro]i] `SIGURG` が上がる。ハンドラ内でこの `MSG_OOB` 付き `recv()` を呼べる。|
+| [i[`MSG_PEEK` macro]i]`MSG_PEEK`                    | `recv()` を「お試し」で呼びたいときに使う。次の本番 `recv()`（`MSG_PEEK` _なし_）の前にバッファに何があるか覗ける。次の `recv()` の予告編のようなもの。| 
+| [i[`MSG_WAITALL` macro]i]`MSG_WAITALL`              | `len` で指定したバイト数が全部届くまで `recv()` を返さないよう指示。シグナルで呼び出しが中断されたり、エラーやリモート切断など極端な状況では従わないこともある。怒らないで。| 
 
-When you call `recv()`, it will block until there is some data to read.
-If you want to not block, set the socket to non-blocking or check with
-`select()` or `poll()` to see if there is incoming data before calling
-`recv()` or `recvfrom()`.
+`recv()` を呼ぶと、読めるデータがあるまでブロックする。ブロックしたくなければ、ソケットを非ブロッキングにするか、`select()` や `poll()` で受信データの有無を確認してから `recv()` や `recvfrom()` を呼ぶ。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns the number of bytes actually received (which might be less than
-you requested in the `len` parameter), or `-1` on error (and `errno`
-will be set accordingly).
+実際に受信したバイト数を返す（`len` より少ないこともある）。エラー時 `-1`（`errno` 設定）。
 
-If the remote side has closed the connection, `recv()` will return `0`.
-This is the normal method for determining if the remote side has closed
-the connection. Normality is good, rebel!
+リモート側が接続を閉じると `recv()` は `0` を返す。リモート切断を判定する通常の方法だ。正常は良いこと、反逆はダメ！
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 // stream sockets and recv()
@@ -1743,7 +1401,7 @@ printf("from IP address %s\n",
         ipstr, sizeof ipstr);
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`send()`](#sendman), [`sendto()`](#sendman), [`select()`](#selectman),
 [`poll()`](#pollman), [Blocking](#blocking)
@@ -1754,9 +1412,9 @@ printf("from IP address %s\n",
 
 [i[`select()` function]i]
 
-Check if sockets descriptors are ready to read/write
+ソケット記述子が読み書き可能かどうかを調べる
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/select.h>
@@ -1770,58 +1428,32 @@ FD_ISSET(int fd, fd_set *set);
 FD_ZERO(fd_set *set);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-The `select()` function gives you a way to simultaneously check multiple
-sockets to see if they have data waiting to be `recv()`d, or if you can
-`send()` data to them without blocking, or if some exception has
-occurred.
+`select()` は複数のソケットを同時に調べ、どれかに `recv()` 待ちのデータがあるか、ブロックせず `send()` できるか、例外（エラー）が起きたかを知れる。
 
-You populate your sets of socket descriptors using the macros, like
-`FD_SET()`, above. Once you have the set, you pass it into the function
-as one of the following parameters: `readfds` if you want to know when
-any of the sockets in the set is ready to `recv()` data, `writefds` if
-any of the sockets is ready to `send()` data to, and/or `exceptfds` if
-you need to know when an exception (error) occurs on any of the sockets.
-Any or all of these parameters can be `NULL` if you're not interested in
-those types of events. After `select()` returns, the values in the sets
-will be changed to show which are ready for reading or writing, and
-which have exceptions.
+`FD_SET()` などのマクロでソケット記述子の集合を作り、次のパラメータのいずれかに渡す：`readfds` は集合内のどれかが `recv()` 可能か、`writefds` は `send()` 可能か、`exceptfds` は例外が必要か。関心のない種類は `NULL` でよい。`select()` から戻ると、集合の値は読み書き可能・例外のあったソケットを示すよう変更される。
 
-The first parameter, `n` is the highest-numbered socket descriptor
-(they're just `int`s, remember?) plus one.
+第 1 パラメータ `n` は、集合内の最大のソケット記述子番号（`int` だ）に 1 を足した値。
 
-Lastly, the [i[`struct timeval` type]i] `struct timeval`, `timeout`, at
-the end---this lets you tell `select()` how long to check these sets
-for. It'll return after the timeout, or when an event occurs, whichever
-is first. The `struct timeval` has two fields: `tv_sec` is the number of
-seconds, to which is added `tv_usec`, the number of microseconds
-(1,000,000 microseconds in a second).
+最後の [i[`struct timeval` type]i] `struct timeval` `timeout` で、`select()` がどれだけ集合を調べるか指定する。タイムアウトかイベントのどちらか早い方で戻る。`struct timeval` は `tv_sec`（秒）と `tv_usec`（マイクロ秒、1 秒は 1,000,000 マイクロ秒）の 2 フィールド。
 
-The helper macros do the following:
+ヘルパーマクロの動作：
 
-| Macro                            | Description                           |
+| マクロ                            | 説明                           |
 |----------------------------------|---------------------------------------|
-| [i[`FD_SET()` macro]i]`FD_SET(int fd, fd_set *set);`     | Add `fd` to the `set`.|
-| [i[`FD_CLR()` macro]i]`FD_CLR(int fd, fd_set *set);`     | Remove `fd` from the `set`.|
-| [i[`FD_ISSET()` macro]i]`FD_ISSET(int fd, fd_set *set);` | Return true if `fd` is in the `set`.|
-| [i[`FD_ZERO()` macro]i]`FD_ZERO(fd_set *set);`           | Clear all entries from the `set`.|
+| [i[`FD_SET()` macro]i]`FD_SET(int fd, fd_set *set);`     | `fd` を `set` に追加。|
+| [i[`FD_CLR()` macro]i]`FD_CLR(int fd, fd_set *set);`     | `fd` を `set` から削除。|
+| [i[`FD_ISSET()` macro]i]`FD_ISSET(int fd, fd_set *set);` | `fd` が `set` にあれば真。|
+| [i[`FD_ZERO()` macro]i]`FD_ZERO(fd_set *set);`           | `set` の全エントリをクリア。|
 
-Note for Linux users: Linux's `select()` can return "ready-to-read" and
-then not actually be ready to read, thus causing the subsequent `read()`
-call to block.  You can work around this bug by setting [i[`O_NONBLOCK`
-macro]] `O_NONBLOCK` flag on the receiving socket so it errors with
-`EWOULDBLOCK`, then ignoring this error if it occurs. See the [`fcntl()`
-man page](#fcntlman) for more info on setting a socket to non-blocking.
+Linux ユーザー向け：Linux の `select()` は "ready-to-read" を返したのに実際には読めず、続く `read()` がブロックすることがある。この不具合の回避策は、受信ソケットに [i[`O_NONBLOCK` macro]] `O_NONBLOCK` を設定して `EWOULDBLOCK` でエラーにし、発生したら無視すること。非ブロッキング設定は [`fcntl()` man page](#fcntlman) を参照。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns the number of descriptors in the set on success, `0` if the
-timeout was reached, or `-1` on error (and `errno` will be set
-accordingly). Also, the sets are modified to show which sockets are
-ready.
+成功時は集合内の記述子数、`0` はタイムアウト、`-1` はエラー（`errno` 設定）。集合もどのソケットが準備できたか示すよう変更される。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 int s1, s2, n;
@@ -1867,7 +1499,7 @@ if (rv == -1) {
 }
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`poll()`](#pollman)
 
@@ -1878,9 +1510,9 @@ if (rv == -1) {
 [i[`setsockopt()` function]i]
 [i[`getsockopt()` function]i]
 
-Set various options for a socket
+ソケットの各種オプションを設定する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/types.h>
@@ -1892,52 +1524,31 @@ int setsockopt(int s, int level, int optname, const void *optval,
                socklen_t optlen);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-Sockets are fairly configurable beasts. In fact, they are so
-configurable, I'm not even going to cover it all here. It's probably
-system-dependent anyway. But I will talk about the basics.
+ソケットはかなり設定可能だ。実際、全部はここでは触れない。システム依存の部分も多い。基本だけ話す。
 
-Obviously, these functions get and set certain options on a socket. On a
-Linux box, all the socket information is in the man page for socket in
-section 7.  (Type: "`man 7 socket`" to get all these goodies.)
+当然、これらの関数はソケットの特定オプションを取得・設定する。Linux ではソケット情報は socket のセクション 7 マンページにある（"`man 7 socket`" と打てば全部出る）。
 
-As for parameters, `s` is the socket you're talking about, level should
-be set to [i[`SOL_SOCKET` macro]i] `SOL_SOCKET`. Then you set the
-`optname` to the name you're interested in. Again, see your man page for
-all the options, but here are some of the most fun ones:
+パラメータとして `s` は対象ソケット、`level` は [i[`SOL_SOCKET` macro]i] `SOL_SOCKET` に設定。`optname` に関心のある名前を設定。オプション一覧はマンページだが、よく使うものをいくつか：
 
-| `optname`         | Description                                          |
+| `optname`         | 説明                                          |
 |-------------------|------------------------------------------------------|
-| [i[`SO_BINDTODEVICE` macro]i]`SO_BINDTODEVICE` | Bind this socket to a symbolic device name like `eth0` instead of using `bind()` to bind it to an IP address. Type the command `ifconfig` under Unix to see the device names.|
-| [i[`SO_REUSEADDR` macro]i]`SO_REUSEADDR      ` | Allows other sockets to `bind()` to this port, unless there is an active listening socket bound to the port already. This enables you to get around those "Address already in use" error messages when you try to restart your server after a crash.|
-| [i[`SO_BROADCAST` macro]i]`SO_BROADCAST`       | Allows UDP datagram (`SOCK_DGRAM`) sockets to send and receive packets sent to and from the broadcast address. Does nothing---_NOTHING!!_---to TCP stream sockets! Hahaha!|
+| [i[`SO_BINDTODEVICE` macro]i]`SO_BINDTODEVICE` | IP アドレスへの `bind()` の代わりに、`eth0` のようなシンボルデバイス名にソケットを結び付ける。Unix で `ifconfig` を打てばデバイス名が見える。|
+| [i[`SO_REUSEADDR` macro]i]`SO_REUSEADDR      ` | すでにそのポートでアクティブな待ち受けソケットがなければ、他のソケットも同じポートに `bind()` できる。クラッシュ後にサーバーを再起動するときの "Address already in use" を回避できる。|
+| [i[`SO_BROADCAST` macro]i]`SO_BROADCAST`       | UDP データグラム（`SOCK_DGRAM`）ソケットがブロードキャストアドレス宛ての送受信を許可。TCP ストリームソケットには _何も_ しない！！ ハハハ！|
 
-As for the parameter `optval`, it's usually a pointer to an `int`
-indicating the value in question. For booleans, zero is false, and
-non-zero is true. And that's an absolute fact, unless it's different on
-your system. If there is no parameter to be passed, `optval` can be
-`NULL`.
+`optval` パラメータはたいてい値を示す `int` へのポインタ。真偽値では 0 が false、非ゼロが true。絶対の事実——システムによって違うかもしれないが。渡す値がなければ `optval` は `NULL` でよい。
 
-The final parameter, `optlen`, should be set to the length of `optval`,
-probably `sizeof(int)`, but varies depending on the option. Note that in
-the case of `getsockopt()`, this is a pointer to a `socklen_t`, and it
-specifies the maximum size object that will be stored in `optval` (to
-prevent buffer overflows). And `getsockopt()` will modify the value of
-`optlen` to reflect the number of bytes actually set.
+最後の `optlen` は `optval` の長さで、たぶん `sizeof(int)` だがオプションによる。`getsockopt()` では `socklen_t` へのポインタで、`optval` に書き込む最大サイズ（バッファオーバーフロー防止）を指定する。`getsockopt()` は実際に設定したバイト数で `optlen` を更新する。
 
-**Warning**: on some systems (notably [i[SunOS]] [i[Solaris]] Sun and
-[i[Windows]] Windows), the option can be a `char` instead of an `int`,
-and is set to, for example, a character value of `'1'` instead of an
-`int` value of `1`. Again, check your own man pages for more info with
-"`man setsockopt`" and "`man 7 socket`"!
+**警告**：一部システム（特に [i[SunOS]] [i[Solaris]] Sun や [i[Windows]] Windows）では、オプションが `int` ではなく `char` で、例えば `int` の `1` ではなく文字 `'1'` になる。詳細は "`man setsockopt`" と "`man 7 socket`" でローカルマンページを確認！
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns zero on success, or `-1` on error (and `errno` will be set
-accordingly).
+成功時は 0、エラー時 `-1`（`errno` 設定）。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 int optval;
@@ -1959,7 +1570,7 @@ if (optval != 0) {
 }
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`fcntl()`](#fcntlman)
 
@@ -1970,9 +1581,9 @@ if (optval != 0) {
 [i[`send()` function]i]
 [i[`sendto()` function]i]
 
-Send data out over a socket
+ソケットからデータを送信する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/types.h>
@@ -1984,42 +1595,26 @@ ssize_t sendto(int s, const void *buf, size_t len,
                socklen_t tolen);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-These functions send data to a socket. Generally speaking, `send()` is
-used for TCP `SOCK_STREAM` connected sockets, and `sendto()` is used for
-UDP `SOCK_DGRAM` unconnected datagram sockets. With the unconnected
-sockets, you must specify the destination of a packet each time you send
-one, and that's why the last parameters of `sendto()` define where the
-packet is going.
+これらの関数はソケットへデータを送る。一般に `send()` は TCP `SOCK_STREAM` の接続済みソケット向け、`sendto()` は UDP `SOCK_DGRAM` の未接続データグラム向け。未接続ソケットではパケットの行き先を送るたびに指定する必要があり、`sendto()` の末尾パラメータが宛先を定義する。
 
-With both `send()` and `sendto()`, the parameter `s` is the socket,
-`buf` is a pointer to the data you want to send, `len` is the number of
-bytes you want to send, and `flags` allows you to specify more
-information about how the data is to be sent. Set `flags` to zero if you
-want it to be "normal" data. Here are some of the commonly used flags,
-but check your local `send()` man pages for more details:
+`send()` も `sendto()` も、パラメータ `s` はソケット、`buf` は送りたいデータへのポインタ、`len` は送るバイト数、`flags` は送信方法の追加情報。普通のデータなら `flags` は 0。よく使うフラグをいくつか（詳細はローカルの `send()` マンページ）：
 
-| Macro           | Description                                            |
+| マクロ           | 説明                                            |
 |-----------------|--------------------------------------------------------|
-| [i[`MSG_OOB` macro]i]`MSG_OOB`             | Send as [i[Out-of-band data]] "out of band" data. TCP supports this, and it's a way to tell the receiving system that this data has a higher priority than the normal data. The receiver will receive the signal [i[`SIGURG` macro]i] `SIGURG` and it can then receive this data without first receiving all the rest of the normal data in the queue.|
-| [i[`MSG_DONTROUTE` macro]i]`MSG_DONTROUTE` | Don't send this data over a router, just keep it local.|
-| [i[`MSG_DONTWAIT` macro]i]`MSG_DONTWAIT`   | If `send()` would block because outbound traffic is clogged, have it return [i[`EAGAIN` macro]] `EAGAIN`.  This is like a "enable [i[Non-blocking sockets]] non-blocking just for this send."  See the section on [blocking](#blocking)  for more details.|
-| [i[`MSG_NOSIGNAL` macro]i]`MSG_NOSIGNAL`   | If you `send()` to a remote host which is no longer `recv()`ing, you'll typically get the signal [i[`SIGPIPE` macro]] `SIGPIPE`. Adding this flag prevents that signal from being raised.|
+| [i[`MSG_OOB` macro]i]`MSG_OOB`             | [i[Out-of-band data]] 帯域外データとして送る。TCP がサポート。通常データより優先度が高いことを受信側に伝える。受信側は [i[`SIGURG` macro]i] `SIGURG` を受け取り、キュー内の通常データを全部受け取る前にこのデータを受信できる。|
+| [i[`MSG_DONTROUTE` macro]i]`MSG_DONTROUTE` | ルータ経由にせずローカルに留める。|
+| [i[`MSG_DONTWAIT` macro]i]`MSG_DONTWAIT`   | 送信が詰まって `send()` がブロックするなら [i[`EAGAIN` macro]] `EAGAIN` で返す。"この send だけ [i[Non-blocking sockets]] 非ブロッキング" のようなもの。詳細は [blocking](#blocking) の節。|
+| [i[`MSG_NOSIGNAL` macro]i]`MSG_NOSIGNAL`   | もう `recv()` していないリモートへ `send()` すると通常 [i[`SIGPIPE` macro]] `SIGPIPE` が上がる。このフラグでそのシグナルを抑止。|
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns the number of bytes actually sent, or `-1` on error (and `errno`
-will be set accordingly). Note that the number of bytes actually sent
-might be less than the number you asked it to send! See the section on
-[handling partial `send()`s](#sendall) for a helper function to get
-around this.
+実際に送ったバイト数、または `-1`（`errno` 設定）。要求したバイト数より少なく送られることもある！[partial `send()`s](#sendall) の節のヘルパー関数を参照。
 
-Also, if the socket has been closed by either side, the process calling
-`send()` will get the signal `SIGPIPE`. (Unless `send()` was called with
-the `MSG_NOSIGNAL` flag.)
+また、どちらかの側がソケットを閉じると `send()` 側は `SIGPIPE` を受ける（`MSG_NOSIGNAL` 付きで呼ばない限り）。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 int spatula_count = 3490;
@@ -2054,7 +1649,7 @@ sendto(dgram_socket, secret_message, strlen(secret_message)+1, 0,
        (struct sockaddr*)&dest, sizeof dest);
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`recv()`](#recvman), [`recvfrom()`](#recvman)
 
@@ -2064,9 +1659,9 @@ sendto(dgram_socket, secret_message, strlen(secret_message)+1, 0,
 
 [i[`shutdown()` function]i]
 
-Stop further sends and receives on a socket
+ソケットでの以降の送受信を止める
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/socket.h>
@@ -2074,35 +1669,23 @@ Stop further sends and receives on a socket
 int shutdown(int s, int how);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-That's it! I've had it! No more `send()`s are allowed on this socket,
-but I still want to `recv()` data on it! Or vice-versa! How can I do
-this?
+もうたくさん！ このソケットではこれ以上 `send()` 禁止、でも `recv()` は続けたい！ またはその逆！ どうすれば？
 
-When you `close()` a socket descriptor, it closes both sides of the
-socket for reading and writing, and frees the socket descriptor. If you
-just want to close one side or the other, you can use this `shutdown()`
-call.
+ソケット記述子を `close()` すると読み書き両方が閉じ、記述子も解放される。片側だけ止めたいなら `shutdown()` を使う。
 
-As for parameters, `s` is obviously the socket you want to perform this
-action on, and what action that is can be specified with the `how`
-parameter. `how` can be [i[`SHUT_RD` macro]i]`SHUT_RD` to prevent
-further `recv()`s, [i[`SHUT_WR` macro]i]`SHUT_WR` to prohibit further
-`send()`s, or [i[`SHUT_RDWR` macro]i]`SHUT_RDWR` to do both.
+パラメータ `s` は対象ソケット、`how` で動作を指定。[i[`SHUT_RD` macro]i]`SHUT_RD` は以降の `recv()` を禁止、[i[`SHUT_WR` macro]i]`SHUT_WR` は `send()` を禁止、[i[`SHUT_RDWR` macro]i]`SHUT_RDWR` は両方。
 
-Note that `shutdown()` doesn't free up the socket descriptor, so you
-still have to eventually `close()` the socket even if it has been fully
-shut down.
+`shutdown()` 自体はソケット記述子を解放しない。完全にシャットダウンしても、最終的には `close()` が必要。
 
-This is a rarely used system call.
+あまり使われないシステムコールだ。
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-Returns zero on success, or `-1` on error (and `errno` will be set
-accordingly).
+成功時は 0、エラー時 `-1`（`errno` 設定）。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 int s = socket(PF_INET, SOCK_STREAM, 0);
@@ -2113,7 +1696,7 @@ int s = socket(PF_INET, SOCK_STREAM, 0);
 shutdown(s, SHUT_WR);
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`close()`](#closeman)
 
@@ -2123,9 +1706,9 @@ shutdown(s, SHUT_WR);
 
 [i[`socket()` function]i]
 
-Allocate a socket descriptor
+ソケット記述子を確保する
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <sys/types.h>
@@ -2134,30 +1717,23 @@ Allocate a socket descriptor
 int socket(int domain, int type, int protocol);
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-Returns a new socket descriptor that you can use to do sockety things
-with. This is generally the first call in the whopping process of
-writing a socket program, and you can use the result for subsequent
-calls to `listen()`, `bind()`, `accept()`, or a variety of other
-functions.
+ソケットプログラムを書く長い道のりの、たいてい最初の呼び出しで返る新しいソケット記述子。以降 `listen()`、`bind()`、`accept()` などに使える。
 
-In usual usage, you get the values for these parameters from a call to
-`getaddrinfo()`, as shown in the example below. But you can fill them in
-by hand if you really want to.
+通常、これらのパラメータ値は下の例のように `getaddrinfo()` から得る。本当に望むなら手で埋めてもよい。
 
-| Parameter  | Description                                                 |
+| パラメータ  | 説明                                                 |
 |------------|-------------------------------------------------------------|
-| `domain`   | `domain` describes what kind of socket you're interested in. This can, believe me, be a wide variety of things, but since this is a socket guide, it's going to be [i[`PF_INET` macro]i] `PF_INET` for IPv4, and `PF_INET6` for IPv6.|
-| `type`     | Also, the `type` parameter can be a number of things, but you'll probably be setting it to either [i[`SOCK_STREAM` macro]i] `SOCK_STREAM` for reliable TCP sockets (`send()`, `recv()`) or [i[`SOCK_DGRAM` macro]i] `SOCK_DGRAM` for unreliable fast UDP sockets (`sendto()`, `recvfrom()`). (Another interesting socket type is [i[`SOCK_RAW` macro]i] `SOCK_RAW` which can be used to construct packets by hand. It's pretty cool.)| 
-| `protocol` | Finally, the `protocol` parameter tells which protocol to use with a certain socket type. Like I've already said, for instance, `SOCK_STREAM` uses TCP. Fortunately for you, when using `SOCK_STREAM` or `SOCK_DGRAM`, you can just set the protocol to 0, and it'll use the proper protocol automatically. Otherwise, you can use [i[`getprotobyname()` function]] `getprotobyname()` to look up the proper protocol number.|
+| `domain`   | `domain` は欲しいソケットの種類。種類は実に広いが、このソケットガイドでは [i[`PF_INET` macro]i] `PF_INET`（IPv4）と `PF_INET6`（IPv6）が中心。|
+| `type`     | `type` もいろいろあるが、たいてい [i[`SOCK_STREAM` macro]i] `SOCK_STREAM`（信頼性のある TCP、`send()`/`recv()`）か [i[`SOCK_DGRAM` macro]i] `SOCK_DGRAM`（信頼性のない高速 UDP、`sendto()`/`recvfrom()`）にする。（[i[`SOCK_RAW` macro]i] `SOCK_RAW` はパケットを手組みするタイプで、かなりクール。）| 
+| `protocol` | `protocol` はソケット型に使うプロトコル。例えば `SOCK_STREAM` は TCP。幸い、`SOCK_STREAM` か `SOCK_DGRAM` なら `protocol` を 0 にして自動選択でよい。それ以外なら [i[`getprotobyname()` function]] `getprotobyname()` でプロトコル番号を調べる。|
 
-### Return Value {.unnumbered .unlisted}
+### 戻り値 {.unnumbered .unlisted}
 
-The new socket descriptor to be used in subsequent calls, or `-1` on
-error (and `errno` will be set accordingly).
+以降の呼び出しに使う新しいソケット記述子、または `-1`（`errno` 設定）。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 struct addrinfo hints, *res;
@@ -2175,14 +1751,14 @@ getaddrinfo("www.example.com", "3490", &hints, &res);
 sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`accept()`](#acceptman), [`bind()`](#bindman),
 [`getaddrinfo()`](#getaddrinfoman), [`listen()`](#listenman)
 
 
 [[manbreak]]
-## `struct sockaddr` and pals {#structsockaddrman}
+## `struct sockaddr` と仲間たち {#structsockaddrman}
 
 [i[`struct sockaddr` type]i]
 [i[`struct sockaddr_in` type]i]
@@ -2191,9 +1767,9 @@ sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 [i[`struct in6_addr` type]i]
 [i[`struct sockaddr_storage` type]i]
 
-Structures for handling internet addresses
+インターネットアドレスを扱う構造体
 
-### Synopsis {.unnumbered .unlisted}
+### 概要 {.unnumbered .unlisted}
 
 ```{.c}
 #include <netinet/in.h>
@@ -2250,51 +1826,27 @@ struct sockaddr_storage {
 };
 ```
 
-### Description {.unnumbered .unlisted}
+### 説明 {.unnumbered .unlisted}
 
-These are the basic structures for all syscalls and functions that deal
-with internet addresses. Often you'll use `getaddrinfo()` to fill these
-structures out, and then will read them when you have to.
+インターネットアドレスを扱うすべてのシステムコール・関数の基本構造体。多くの場合 `getaddrinfo()` でこれらを埋め、必要なときに読む。
 
-In memory, the `struct sockaddr_in` and `struct sockaddr_in6` share the
-same beginning structure as `struct sockaddr`, and you can freely cast
-the pointer of one type to the other without any harm, except the
-possible end of the universe.
+メモリ上では `struct sockaddr_in` と `struct sockaddr_in6` は `struct sockaddr` と先頭構造を共有しており、一方のポインタを他方に自由にキャストしても害はない——宇宙の終わりを除いて。
 
-Just kidding on that end-of-the-universe thing...if the universe does
-end when you cast a `struct sockaddr_in*` to a ` struct sockaddr*`, I
-promise you it's pure coincidence and you shouldn't even worry about it.
+宇宙の終わりの話は冗談……`struct sockaddr_in*` を `struct sockaddr*` にキャストして宇宙が終わるなら、純粋な偶然だから心配しないで。
 
-So, with that in mind, remember that whenever a function says it takes a
-`struct sockaddr*` you can cast your `struct sockaddr_in*`, `struct
-sockaddr_in6*`, or `struct sockaddr_storage*` to that type with ease and
-safety.
+覚えておいて：`struct sockaddr*` を取る関数には、`struct sockaddr_in*`、`struct sockaddr_in6*`、`struct sockaddr_storage*` を安全にキャストして渡せる。
 
-`struct sockaddr_in` is the structure used with IPv4 addresses (e.g.
-"192.0.2.10"). It holds an address family (`AF_INET`), a port in
-`sin_port`, and an IPv4 address in `sin_addr`.
+`struct sockaddr_in` は IPv4 アドレス（例 "192.0.2.10"）用。アドレスファミリー（`AF_INET`）、ポート `sin_port`、IPv4 アドレス `sin_addr` を持つ。
 
-There's also this `sin_zero` field in `struct sockaddr_in` which some
-people claim must be set to zero. Other people don't claim anything
-about it (the Linux documentation doesn't even mention it at all), and
-setting it to zero doesn't seem to be actually necessary. So, if you
-feel like it, set it to zero using `memset()`.
+`struct sockaddr_in` には `sin_zero` フィールドもあり、ゼロにしなければならないと主張する人もいる。主張しない人もいる（Linux ドキュメントは触れていない）。実際ゼロにしなくても動く。気が向けば `memset()` でゼロにしてよい。
 
-Now, that `struct in_addr` is a weird beast on different systems.
-Sometimes it's a crazy `union` with all kinds of `#define`s and other
-nonsense. But what you should do is only use the `s_addr` field in this
-structure, because many systems only implement that one.
+`struct in_addr` はシステムごとに変わる。ときどき `#define` だらけの `union` だ。使うのは `s_addr` フィールドだけでよい。多くのシステムはそれしか実装していない。
 
-`struct sockaddr_in6` and `struct in6_addr` are very similar, except
-they're used for IPv6.
+`struct sockaddr_in6` と `struct in6_addr` は IPv6 版で、構造は似ている。
 
-`struct sockaddr_storage` is a struct you can pass to `accept()` or
-`recvfrom()` when you're trying to write IP version-agnostic code and
-you don't know if the new address is going to be IPv4 or IPv6. The
-`struct sockaddr_storage` structure is large enough to hold both types,
-unlike the original small `struct sockaddr`.
+`struct sockaddr_storage` は `accept()` や `recvfrom()` に渡す IP 版非依存コード用。新しいアドレスが IPv4 か IPv6 か分からないとき、元の小さな `struct sockaddr` とは違い、どちらも載せられるほど大きい。
 
-### Example {.unnumbered .unlisted}
+### 例 {.unnumbered .unlisted}
 
 ```{.c .numberLines}
 // IPv4:
@@ -2324,7 +1876,7 @@ s = socket(PF_INET6, SOCK_STREAM, 0);
 bind(s, (struct sockaddr*)&ip6addr, sizeof ip6addr);
 ```
 
-### See Also {.unnumbered .unlisted}
+### 関連項目 {.unnumbered .unlisted}
 
 [`accept()`](#acceptman), [`bind()`](#bindman), [`connect()`](#connectman),
 [`inet_aton()`](#inet_ntoaman), [`inet_ntoa()`](#inet_ntoaman)

@@ -1,31 +1,17 @@
-# Slightly Advanced Techniques
+# ちょっと進んだテクニック
 
-These aren't _really_ advanced, but they're getting out of the more
-basic levels we've already covered. In fact, if you've gotten this far,
-you should consider yourself fairly accomplished in the basics of Unix
-network programming!  Congratulations!
+これらは _本当に_ 高度というわけではないが、これまで扱ってきた基本的なレベルを超えてきている。実際、ここまで来たなら、Unix ネットワークプログラミングの基礎はかなり身についたと言っていいだろう！ おめでとう！
 
-So here we go into the brave new world of some of the more esoteric
-things you might want to learn about sockets. Have at it!
+さあ、ソケットについて学びたくなる、もう少しマニアックな領域へ踏み込んでいこう。やってみよう！
 
 
-## Blocking {#blocking}
+## ブロッキング {#blocking}
 
 [i[Blocking]<]
 
-Blocking. You've heard about it---now what the heck is it? In a
-nutshell, "block" is techie jargon for "sleep". You probably noticed
-that when you run `listener`, above, it just sits there until a packet
-arrives. What happened is that it called `recvfrom()`, there was no
-data, and so `recvfrom()` is said to "block" (that is, sleep there)
-until some data arrives.
+ブロッキング。聞いたことはあるだろう——で、いったい何だ？ 要するに「block」は技術者用語で「sleep（スリープ）」のことだ。上で `listener` を動かしたとき、パケットが届くまでじっとしているのに気づいたかもしれない。起きていることは、`recvfrom()` を呼んだがデータがなく、`recvfrom()` が「ブロック」している（つまりそこでスリープしている）と言われる、ということだ。データが届くまで。
 
-Lots of functions block. `accept()` blocks. All the `recv()` functions
-block.  The reason they can do this is because they're allowed to. When
-you first create the socket descriptor with `socket()`, the kernel sets
-it to blocking.  [i[Non-blocking sockets]] If you don't want a socket to
-be blocking, you have to make a call to [i[`fcntl()` function]]
-`fcntl()`:
+ブロックする関数はたくさんある。`accept()` はブロックする。`recv()` 系は全部ブロックする。できる理由は、許されているからだ。`socket()` で最初にソケット記述子を作ると、カーネルはそれをブロッキングに設定する。[i[Non-blocking sockets]] ブロッキングにしたくないなら、[i[`fcntl()` function]] `fcntl()` を呼ぶ必要がある：
 
 ```{.c .numberLines}
 #include <unistd.h>
@@ -40,56 +26,30 @@ fcntl(sockfd, F_SETFL, O_NONBLOCK);
 . 
 ```
 
-By setting a socket to non-blocking, you can effectively "poll" the
-socket for information. If you try to read from a non-blocking socket
-and there's no data there, it's not allowed to block---it will return
-`-1` and `errno` will be set to [i[`EAGAIN` macro]] `EAGAIN` or
-[i[`EWOULDBLOCK` macro]] `EWOULDBLOCK`.
+ソケットをノンブロッキングにすると、事実上ソケットを「ポーリング」して情報を得られる。ノンブロッキングソケットから読もうとしてデータがなければ、ブロックは許されない——`-1` を返し、`errno` は [i[`EAGAIN` macro]] `EAGAIN` か [i[`EWOULDBLOCK` macro]] `EWOULDBLOCK` に設定される。
 
-(Wait---it can return [i[`EAGAIN` macro]] `EAGAIN` _or_
-[i[`EWOULDBLOCK` macro]] `EWOULDBLOCK`? Which do you check for?  The
-specification doesn't actually specify which your system will return, so
-for portability, check them both.)
+（待てよ——[i[`EAGAIN` macro]] `EAGAIN` _か_ [i[`EWOULDBLOCK` macro]] `EWOULDBLOCK` が返る？ どっちをチェックする？ 仕様は実際にはシステムがどちらを返すかは指定していないので、移植性のため両方チェックしよう。）
 
-Generally speaking, however, this type of polling is a bad idea. If you
-put your program in a busy-wait looking for data on the socket, you'll
-suck up CPU time like it was going out of style. A more elegant solution
-for checking to see if there's data waiting to be read comes in the
-following section on [i[`poll()` function]] `poll()`.
+ただし一般に、この種のポーリングは悪い考えだ。ソケットにデータがあるかビジー・ウェイトでループすると、CPU 時間を猛烈に食う。データ待ちをもっとエレガントに調べる方法は、次の [i[`poll()` function]] `poll()` の節にある。
 
 [i[Blocking]>]
 
-## `poll()`---Synchronous I/O Multiplexing {#poll}
+
+## `poll()`——同期 I/O 多重化 {#poll}
 
 [i[poll()]<]
 
-What you really want to be able to do is somehow monitor a _bunch_ of
-sockets at once and then handle the ones that have data ready. This way
-you don't have to continuously poll all those sockets to see which are
-ready to read.
+本当にやりたいのは、_たくさんの_ ソケットを一度に監視して、データの準備ができたものだけ処理することだ。そうすれば、読み込み準備ができたソケットを見つけるために、ずっと全部をポーリングし続ける必要がない。
 
-> _A word of warning: `poll()` is horribly slow when it comes to giant
-> numbers of connections. In those circumstances, you'll get better
-> performance out of an event library such as
-> [fl[libevent|https://libevent.org/]] that attempts to use the fastest
-> possible method availabile on your system._
+> _注意：接続数が膨大なとき、`poll()` はひどく遅い。そういう状況では、システムで使える最速の方法を選ぼうとする [fl[libevent|https://libevent.org/]] のようなイベントライブラリの方がパフォーマンスが良い。_
 
-So how can you avoid polling? Not slightly ironically, you can avoid
-polling by using the `poll()` system call. In a nutshell, we're going to
-ask the operating system to do all the dirty work for us, and just let
-us know when some data is ready to read on which sockets. In the
-meantime, our process can go to sleep, saving system resources.
+ではポーリングを避けるには？ 少し皮肉なことに、`poll()` システムコールを使えばポーリングを避けられる。要するに、面倒な仕事は OS に任せて、どのソケットに読めるデータがあるか教えてもらうだけだ。その間、プロセスはスリープしてシステムリソースを節約できる。
 
-The general gameplan is to keep an array of `struct pollfd`s with
-information about which socket descriptors we want to monitor, and what
-kind of events we want to monitor for. The OS will block on the `poll()`
-call until one of those events occurs (e.g. "socket ready to read!") or
-until a user-specified timeout occurs.
+大まかな流れは、監視したいソケット記述子と、どんなイベントを監視するかの情報を持つ `struct pollfd` の配列を用意することだ。OS は `poll()` 呼び出しでブロックし、それらのイベントのいずれか（例：「ソケット読み込み準備完了！」）か、ユーザー指定のタイムアウトが起きるまで待つ。
 
-Usefully, a `listen()`ing socket will return "ready to read" when a new
-incoming connection is ready to be `accept()`ed.
+便利なことに、`listen()` しているソケットは、新しい着信接続が `accept()` できる状態になると「読み込み準備完了」を返す。
 
-That's enough banter. How do we use this?
+おしゃべりはここまで。使い方は？
 
 ``` {.c}
 #include <poll.h>
@@ -97,12 +57,9 @@ That's enough banter. How do we use this?
 int poll(struct pollfd fds[], nfds_t nfds, int timeout);
 ```
 
-`fds` is our array of information (which sockets to monitor for what),
-`nfds` is the count of elements in the array, and `timeout` is a timeout
-in milliseconds. It returns the number of elements in the array that
-have had an event occur.
+`fds` は情報の配列（どのソケットを何のために監視するか）、`nfds` は配列の要素数、`timeout` はミリ秒単位のタイムアウトだ。イベントが起きた配列要素の数を返す。
 
-Let's have a look at that `struct`:
+その `struct` を見てみよう：
 
 [i[`struct pollfd` type]]
 
@@ -114,32 +71,23 @@ struct pollfd {
 };
 ```
 
-So we're going to have an array of those, and we'll set the `fd` field
-for each element to a socket descriptor we're interested in monitoring.
-And then we'll set the `events` field to indicate the type of events
-we're interested in.
+この配列を用意し、各要素の `fd` フィールドに監視したいソケット記述子を入れる。そして `events` フィールドに興味のあるイベントの種類を設定する。
 
-The `events` field is the bitwise-OR of the following:
+`events` フィールドは次のビットごとの OR だ：
 
-| Macro     | Description                                                  |
+| Macro     | 説明                                                         |
 |-----------|--------------------------------------------------------------|
-| `POLLIN`  | Alert me when data is ready to `recv()` on this socket.      |
-| `POLLOUT` | Alert me when I can `send()` data to this socket without blocking.|
-| `POLLHUP` | Alert me when the remote closed the connection.|
+| `POLLIN`  | このソケットで `recv()` できるデータが用意されたら知らせて。 |
+| `POLLOUT` | このソケットへブロックせずに `send()` できるようになったら知らせて。 |
+| `POLLHUP` | リモートが接続を閉じたら知らせて。                           |
 
-Once you have your array of `struct pollfd`s in order, then you can pass
-it to `poll()`, also passing the size of the array, as well as a timeout
-value in milliseconds. (You can specify a negative timeout to wait
-forever.)
+`struct pollfd` の配列ができたら、それを `poll()` に渡し、配列のサイズとミリ秒単位のタイムアウトも渡す。（負のタイムアウトで永遠に待つこともできる。）
 
-After `poll()` returns, you can check the `revents` field to see if
-`POLLIN` or `POLLOUT` is set, indicating that event occurred.
+`poll()` が戻ったら、`revents` フィールドを見て `POLLIN` や `POLLOUT` がセットされているか確認し、そのイベントが起きたことを知る。
 
-(There's actually more that you can do with the `poll()` call. See the
-[`poll()` man page, below](#pollman), for more details.)
+（`poll()` 呼び出しでできることは実はもっとある。詳細は下の [`poll()` man ページ](#pollman) を参照。）
 
-Here's [flx[an example|poll.c]] where we'll wait 2.5 seconds for data to
-be ready to read from standard input, i.e. when you hit `RETURN`:
+標準入力からデータが読めるようになるまで 2.5 秒待つ [flx[例|poll.c]] だ。つまり `RETURN` を押したとき：
 
 ``` {.c .numberLines}
 #include <stdio.h>
@@ -178,46 +126,25 @@ int main(void)
 }
 ```
 
-Notice again that `poll()` returns the number of elements in the `pfds`
-array for which events have occurred. It doesn't tell you _which_
-elements in the array (you still have to scan for that), but it does
-tell you how many entries have a non-zero `revents` field (so you can
-stop scanning after you find that many).
+また `poll()` は、`pfds` 配列のうちイベントが起きた要素の _数_ を返すことに注意。配列の _どの_ 要素かは教えてくれない（それは自分でスキャンする必要がある）が、`revents` がゼロでないエントリがいくつあるかは教えてくれる（だからその数だけ見つけたらスキャンを止められる）。
 
-A couple questions might come up here: how to add new file descriptors
-to the set I pass to `poll()`? For this, simply make sure you have
-enough space in the array for all you need, or `realloc()` more space as
-needed.
+ここで疑問が出るかもしれない：`poll()` に渡すセットに新しいファイル記述子を追加するには？ 必要な分だけ配列に十分なスペースがあることを確認するか、必要に応じて `realloc()` で増やせばいい。
 
-What about deleting items from the set? For this, you can copy the last
-element in the array over-top the one you're deleting. And then pass in
-one fewer as the count to `poll()`. Another option is that you can set
-any `fd` field to a negative number and `poll()` will ignore it.
+セットから項目を削除するには？ 配列の最後の要素を削除したい要素の上にコピーする。そして `poll()` に渡すカウントを 1 つ減らす。別の方法として、任意の `fd` フィールドを負の数にすると `poll()` は無視する。
 
-How can we put it all together into a chat server that you can `telnet`
-to?
+これを全部まとめて、`telnet` で接続できるチャットサーバーにするには？
 
-What we'll do is start a listener socket, and add it to the set of file
-descriptors to `poll()`. (It will show ready-to-read when there's an
-incoming connection.)
+リスナーソケットを起動し、`poll()` するファイル記述子のセットに追加する。（着信接続があると読み込み準備完了になる。）
 
-Then we'll add new connections to our `struct pollfd` array. And we'll
-grow it dynamically if we run out of space.
+新しい接続を `struct pollfd` 配列に追加する。スペースが足りなくなったら動的に拡張する。
 
-When a connection is closed, we'll remove it from the array.
+接続が閉じられたら配列から削除する。
 
-And when a connection is ready-to-read, we'll read the data from it and
-send that data to all the other connections so they can see what the
-other users typed.
+接続が読み込み準備完了になったらデータを読み、他の接続すべてに送って、他のユーザーが何を打ったか見えるようにする。
 
-So give [flx[this poll server|pollserver.c]] a try. Run it in one
-window, then `telnet localhost 9034` from a number of other terminal
-windows. You should be able to see what you type in one window in the
-other ones (after you hit RETURN).
+では [flx[この poll サーバー|pollserver.c]] を試してみよう。1 つのウィンドウで動かし、他の複数のターミナルウィンドウから `telnet localhost 9034` する。1 つのウィンドウで打ったものが、他のウィンドウにも（`RETURN` を押したあと）見えるはずだ。
 
-Not only that, but if you hit `CTRL-]` and type `quit` to exit `telnet`,
-the server should detect the disconnection and remove you from the array
-of file descriptors.
+それだけでなく、`CTRL-]` を押して `quit` と打って `telnet` を終了すると、サーバーは切断を検出してファイル記述子の配列から削除するはずだ。
 
 ``` {.c .numberLines}
 /*
@@ -491,42 +418,24 @@ int main(void)
 }
 ```
 
-In the next section, we'll look at a similar, older function called
-`select()`. Both `select()` and `poll()` offer similar functionality and
-performance, and only really differ in how they're used. `select()`
-might be slightly more portable, but is perhaps a little clunkier in
-use. Choose the one you like the best, as long as it's supported on your
-system.
+次の節では、似た古い関数 `select()` を見る。`select()` と `poll()` は似た機能とパフォーマンスを提供し、本当の違いは使い方だけだ。`select()` の方がやや移植性が高いかもしれないが、使い勝手は少しぎこちないかもしれない。システムでサポートされているなら、好きな方を選べばいい。
 
 [i[poll()]>]
 
 
-## `select()`---Synchronous I/O Multiplexing, Old School {#select}
+## `select()`——同期 I/O 多重化、オールドスクール {#select}
 
 [i[`select()` function]<]
 
-This function is somewhat strange, but it's very useful. Take the
-following situation: you are a server and you want to listen for
-incoming connections as well as keep reading from the connections you
-already have.
+この関数はやや奇妙だが、とても便利だ。次の状況を想像してほしい：あなたはサーバーで、着信接続を待ちながら、すでにある接続からも読み続けたい。
 
-No problem, you say, just an `accept()` and a couple of `recv()`s. Not
-so fast, buster! What if you're blocking on an `accept()` call? How are
-you going to `recv()` data at the same time? "Use non-blocking sockets!"
-No way! You don't want to be a CPU hog. What, then?
+問題ない、と言うだろう、`accept()` と `recv()` をいくつか。ちょっと待て、相棒！ `accept()` でブロックしているとき、同時に `recv()` でデータを読むにはどうする？ 「ノンブロッキングソケットを使え！」 だめだ！ CPU ホグにはなりたくない。じゃあどうする？
 
-`select()` gives you the power to monitor several sockets at the same
-time.  It'll tell you which ones are ready for reading, which are ready
-for writing, and which sockets have raised exceptions, if you really
-want to know that.
+`select()` は複数のソケットを同時に監視する力を与えてくれる。どれが読み込み準備完了か、どれが書き込み準備完了か、本当に知りたければどれで例外が起きたかも教えてくれる。
 
-> _A word of warning: `select()`, though very portable, is terribly slow
-> when it comes to giant numbers of connections. In those circumstances,
-> you'll get better performance out of an event library such as
-> [fl[libevent|https://libevent.org/]] that attempts to use the fastest
-> possible method availabile on your system._
+> _注意：`select()` は非常に移植性が高いが、接続数が膨大なときはひどく遅い。そういう状況では、システムで使える最速の方法を選ぼうとする [fl[libevent|https://libevent.org/]] のようなイベントライブラリの方がパフォーマンスが良い。_
 
-Without any further ado, I'll offer the synopsis of `select()`:
+さらなる前置きなしに、`select()` の概要を示す：
 
 ```{.c}
 #include <sys/time.h>
@@ -537,40 +446,24 @@ int select(int numfds, fd_set *readfds, fd_set *writefds,
            fd_set *exceptfds, struct timeval *timeout); 
 ```
 
-The function monitors "sets" of file descriptors; in particular
-`readfds`, `writefds`, and `exceptfds`. If you want to see if you can
-read from standard input and some socket descriptor, `sockfd`, just add
-the file descriptors `0` and `sockfd` to the set `readfds`. The
-parameter `numfds` should be set to the values of the highest file
-descriptor plus one. In this example, it should be set to `sockfd+1`,
-since it is assuredly higher than standard input (`0`).
+この関数はファイル記述子の「セット」を監視する。特に `readfds`、`writefds`、`exceptfds` だ。標準入力とソケット記述子 `sockfd` から読めるか見たいなら、ファイル記述子 `0` と `sockfd` をセット `readfds` に追加する。パラメータ `numfds` は最高のファイル記述子の値プラス 1 に設定すべきだ。この例では `sockfd+1` にすべきだ。標準入力（`0`）より確実に大きいからだ。
 
-When `select()` returns, `readfds` will be modified to reflect which of
-the file descriptors you selected which is ready for reading. You can
-test them with the macro `FD_ISSET()`, below.
+`select()` が戻ると、`readfds` は変更され、選択したうちどれが読み込み準備完了かを反映する。下のマクロ `FD_ISSET()` でテストできる。
 
-Before progressing much further, I'll talk about how to manipulate these
-sets.  Each set is of the type `fd_set`. The following macros operate on
-this type:
+先に進む前に、これらのセットの操作について話そう。各セットは型 `fd_set` だ。次のマクロがこの型を操作する：
 
-| Function                         | Description                          |
-|----------------------------------|--------------------------------------|
-| [i[`FD_SET()` macro]]`FD_SET(int fd, fd_set *set);`   | Add `fd` to the `set`.               |
-| [i[`FD_CLR()` macro]]`FD_CLR(int fd, fd_set *set);`   | Remove `fd` from the `set`.          |
-| [i[`FD_ISSET()` macro]]`FD_ISSET(int fd, fd_set *set);` | Return true if `fd` is in the `set`. |
-| [i[`FD_ZERO()` macro]]`FD_ZERO(fd_set *set);`          | Clear all entries from the `set`.    |
+| 関数                         | 説明                                 |
+|------------------------------|--------------------------------------|
+| [i[`FD_SET()` macro]]`FD_SET(int fd, fd_set *set);`   | `fd` を `set` に追加する。           |
+| [i[`FD_CLR()` macro]]`FD_CLR(int fd, fd_set *set);`   | `fd` を `set` から削除する。         |
+| [i[`FD_ISSET()` macro]]`FD_ISSET(int fd, fd_set *set);` | `fd` が `set` にあれば真を返す。 |
+| [i[`FD_ZERO()` macro]]`FD_ZERO(fd_set *set);`          | `set` の全エントリをクリアする。     |
 
 [i[`struct timeval` type]<]
 
-Finally, what is this weirded-out  `struct timeval`? Well, sometimes you
-don't want to wait forever for someone to send you some data. Maybe
-every 96 seconds you want to print "Still Going..." to the terminal even
-though nothing has happened. This time structure allows you to specify a
-timeout period. If the time is exceeded and `select()` still hasn't
-found any ready file descriptors, it'll return so you can continue
-processing.
+最後に、この変わった `struct timeval` とは何だ？ 誰かがデータを送ってくるのを永遠に待ちたくないときがある。たとえ何も起きていなくても 96 秒ごとにターミナルに "Still Going..." と出したい、など。この時間構造体でタイムアウト期間を指定できる。時間を超えても `select()` が準備完了のファイル記述子を見つけられなければ、戻って処理を続けられる。
 
-The `struct timeval` has the follow fields:
+`struct timeval` には次のフィールドがある：
 
 ```{.c}
 struct timeval {
@@ -579,28 +472,13 @@ struct timeval {
 }; 
 ```
 
-Just set `tv_sec` to the number of seconds to wait, and set `tv_usec` to
-the number of microseconds to wait. Yes, that's _micro_seconds, not
-milliseconds.  There are 1,000 microseconds in a millisecond, and 1,000
-milliseconds in a second. Thus, there are 1,000,000 microseconds in a
-second. Why is it "usec"?  The "u" is supposed to look like the Greek
-letter μ (Mu) that we use for "micro". Also, when the function returns,
-`timeout` _might_ be updated to show the time still remaining. This
-depends on what flavor of Unix you're running.
+`tv_sec` を待つ秒数に、`tv_usec` を待つマイクロ秒数に設定する。そう、_マイクロ_秒であってミリ秒ではない。1 ミリ秒に 1000 マイクロ秒、1 秒に 1000 ミリ秒。つまり 1 秒に 1,000,000 マイクロ秒。なぜ "usec"？ "u" は「マイクロ」のギリシャ文字 μ（Mu）に似せたものだ。また、関数が戻ると `timeout` は _場合によって_ 残り時間を示すよう更新される。動いている Unix の種類による。
 
-Yay! We have a microsecond resolution timer! Well, don't count on it.
-You'll probably have to wait some part of your standard Unix timeslice
-no matter how small you set your `struct timeval`.
+やった！ マイクロ秒解像度のタイマーだ！ まあ、当てにしない方がいい。`struct timeval` をどんなに小さくしても、標準の Unix タイムスライスの一部は待つことになるだろう。
 
-Other things of interest:  If you set the fields in your `struct
-timeval` to `0`, `select()` will timeout immediately, effectively
-polling all the file descriptors in your sets. If you set the parameter
-`timeout` to NULL, it will never timeout, and will wait until the first
-file descriptor is ready. Finally, if you don't care about waiting for a
-certain set, you can just set it to NULL in the call to `select()`.
+他に興味深いこと：`struct timeval` のフィールドを `0` にすると、`select()` は即座にタイムアウトし、実質セット内の全ファイル記述子をポーリングする。パラメータ `timeout` を NULL にすると、決してタイムアウトせず、最初のファイル記述子が準備完了するまで待つ。最後に、特定のセットを待つ必要がなければ、`select()` 呼び出しで NULL にできる。
 
-[flx[The following code snippet|select.c]] waits 2.5 seconds for
-something to appear on standard input:
+[flx[次のコード片|select.c]] は標準入力に何か現れるまで 2.5 秒待つ：
 
 ```{.c .numberLines}
 /*
@@ -637,44 +515,25 @@ int main(void)
 } 
 ```
 
-If you're on a line buffered terminal, the key you hit should be RETURN
-or it will time out anyway.
+行バッファのターミナルなら、押したキーは RETURN でないとタイムアウトするだろう。
 
-Now, some of you might think this is a great way to wait for data on a
-datagram socket---and you are right: it _might_ be. Some Unices can use
-select in this manner, and some can't. You should see what your local
-man page says on the matter if you want to attempt it.
+さて、データグラムソケットでデータを待つのにこれは素晴らしい方法だと思う人もいる——その通り _かもしれない_。一部の Unix ではこの使い方ができ、一部ではできない。試すならローカルの man ページで確認すべきだ。
 
-Some Unices update the time in your `struct timeval` to reflect the
-amount of time still remaining before a timeout. But others do not.
-Don't rely on that occurring if you want to be portable. (Use
-[i[`gettimeofday()` function]] `gettimeofday()` if you need to track time
-elapsed. It's a bummer, I know, but that's the way it is.)
+一部の Unix はタイムアウトまでの残り時間を反映するよう `struct timeval` の時間を更新する。他はしない。移植性を重視するならそれに頼らないこと。（経過時間を追跡するなら [i[`gettimeofday()` function]] `gettimeofday()` を使え。残念だが、そういうものだ。）
 
 [i[`struct timeval` type]>]
 
-What happens if a socket in the read set closes the connection? Well, in
-that case, `select()` returns with that socket descriptor set as "ready
-to read".  When you actually do `recv()` from it, `recv()` will return
-`0`. That's how you know the client has closed the connection.
+読み込みセットのソケットが接続を閉じたらどうなる？ その場合、`select()` はそのソケット記述子を「読み込み準備完了」としてセットした状態で戻る。実際にそこから `recv()` すると、`recv()` は `0` を返す。クライアントが接続を閉じたことがわかる方法だ。
 
-One more note of interest about `select()`: if you have a socket that is
-[i[`select()` function-->with `listen()`]]
+`select()` についてもう一つ：[i[`select()` function-->with `listen()`]]
 [i[`listen()` function-->with `select()`]]
-`listen()`ing, you can check to see if there is a new connection by
-putting that socket's file descriptor in the `readfds` set.
+`listen()` しているソケットがあれば、そのソケットのファイル記述子を `readfds` セットに入れることで新しい接続があるか調べられる。
 
-And that, my friends, is a quick overview of the almighty `select()`
-function.
+というわけで、万能の `select()` 関数のざっとした概要だ。
 
-But, by popular demand, here is an in-depth example. Unfortunately, the
-difference between the dirt-simple example, above, and this one here is
-significant. But have a look, then read the description that follows it.
+ただし、人気の要望に応えて、詳しい例を載せる。残念ながら、上の超シンプルな例とここでの例の差はかなり大きい。でも見て、そのあと続く説明を読んでほしい。
 
-[flx[This program|selectserver.c]] acts like a simple multi-user chat
-server. Start it running in one window, then `telnet` to it ("`telnet
-hostname 9034`") from multiple other windows. When you type something in
-one `telnet` session, it should appear in all the others.
+[flx[このプログラム|selectserver.c]] はシンプルなマルチユーザーチャットサーバーのように動く。1 つのウィンドウで起動し、他の複数のウィンドウから `telnet` する（"`telnet hostname 9034`"）。1 つの `telnet` セッションで打ったものが、他のすべてに現れるはずだ。
 
 ```{.c .numberLines}
 /*
@@ -896,65 +755,33 @@ int main(void)
 }
 ```
 
-Notice I have two file descriptor sets in the code: `master` and
-`read_fds`. The first, `master`, holds all the socket descriptors that
-are currently connected, as well as the socket descriptor that is
-listening for new connections.
+コードにファイル記述子セットが 2 つあることに注意：`master` と `read_fds` だ。最初の `master` は、現在接続されているすべてのソケット記述子と、新しい接続を待っているリスニング用ソケット記述子を保持する。
 
-The reason I have the `master` set is that `select()` actually _changes_
-the set you pass into it to reflect which sockets are ready to read.
-Since I have to keep track of the connections from one call of
-`select()` to the next, I must store these safely away somewhere. At the
-last minute, I copy the `master` into the `read_fds`, and then call
-`select()`.
+`master` セットがある理由は、`select()` が実際に渡したセットを _変更_ して、どのソケットが読み込み準備完了かを反映するからだ。`select()` の呼び出しから次の呼び出しまで接続を追跡する必要があるので、安全な場所に保存しておかなければならない。直前に `master` を `read_fds` にコピーしてから `select()` を呼ぶ。
 
-But doesn't this mean that every time I get a new connection, I have to
-add it to the `master` set? Yup! And every time a connection closes, I
-have to remove it from the `master` set? Yes, it does.
+でも新しい接続のたびに `master` セットに追加しなければならないのか？ そうだ！ 接続が閉じるたびに `master` から削除する？ はい、その通りだ。
 
-Notice I check to see when the `listener` socket is ready to read. When
-it is, it means I have a new connection pending, and I `accept()` it and
-add it to the `master` set. Similarly, when a client connection is ready
-to read, and `recv()` returns `0`, I know the client has closed the
-connection, and I must remove it from the `master` set.
+`listener` ソケットが読み込み準備完了になったときをチェックする。そうなれば新しい接続が保留中で、`accept()` して `master` セットに追加する。同様に、クライアント接続が読み込み準備完了で `recv()` が `0` を返せば、クライアントが接続を閉じたことがわかり、`master` セットから削除しなければならない。
 
-If the client `recv()` returns non-zero, though, I know some data has
-been received. So I get it, and then go through the `master` list and
-send that data to all the rest of the connected clients.
+クライアントの `recv()` がゼロ以外を返せば、データを受信したことがわかる。それを取得し、`master` リストを走査して、接続中の他のクライアントすべてにそのデータを送る。
 
-And that, my friends, is a less-than-simple overview of the almighty
-`select()` function.
+というわけで、万能の `select()` 関数の、あまりシンプルではない概要だ。
 
-Quick note to all you Linux fans out there: sometimes, in rare
-circumstances, Linux's `select()` can return "ready-to-read" and then
-not actually be ready to read! This means it will block on the `read()`
-after the `select()` says it won't! Why you little---! Anyway, the
-workaround solution is to set the [i[`O_NONBLOCK` macro]] `O_NONBLOCK`
-flag on the receiving socket so it errors with `EWOULDBLOCK` (which you
-can just safely ignore if it occurs). See the [`fcntl()` reference
-page](#fcntlman) for more info on setting a socket to non-blocking.
+Linux ファンの皆さんへのクイックメモ：まれな状況で、Linux の `select()` は「読み込み準備完了」と返したのに実際には読めないことがある！ つまり `select()` が読めると言ったあと `read()` でブロックする！ この小僧め——！ とにかく回避策は、受信ソケットに [i[`O_NONBLOCK` macro]] `O_NONBLOCK` フラグを設定して `EWOULDBLOCK` でエラーにし（起きたら無視してよい）、ソケットをノンブロッキングに設定する方法だ。詳細は [`fcntl()` リファレンスページ](#fcntlman) を参照。
 
-In addition, here is a bonus afterthought: there is another function
-called [i[`poll()` function]] `poll()` which behaves much the same way
-`select()` does, but with a different system for managing the file
-descriptor sets. [Check it out!](#pollman)
+加えて、ボーナスの余談：`select()` とほぼ同じように動くが、ファイル記述子セットの管理方法が違う [i[`poll()` function]] `poll()` という別の関数もある。[チェックしてみて！](#pollman)
 
 [i[`select()` function]>]
 
-## Handling Partial `send()`s {#sendall}
 
-Remember back in the [section about `send()`](#sendrecv), above, when I
-said that `send()` might not send all the bytes you asked it to? That
-is, you want it to send 512 bytes, but it returns 412. What happened to
-the remaining 100 bytes?
+## 部分的な `send()` の処理 {#sendall}
 
-Well, they're still in your little buffer waiting to be sent out. Due to
-circumstances beyond your control, the kernel decided not to send all
-the data out in one chunk, and now, my friend, it's up to you to get the
-data out there.
+上の [`send()` の節](#sendrecv) で、`send()` は要求したバイト数をすべて送らないかもしれないと言ったのを覚えているだろうか？ 512 バイト送りたいのに 412 を返す。残りの 100 バイトはどうなった？
+
+まだ小さなバッファに残っていて、送られるのを待っている。制御不能の事情で、カーネルはデータを一度に全部送らないことにした。あとは自分でデータを届けるしかない。
 
 [i[`sendall()` function]<]
-You could write a function like this to do it, too:
+こんな関数を書いてもいい：
 
 ```{.c .numberLines}
 #include <sys/types.h>
@@ -979,18 +806,11 @@ int sendall(int s, char *buf, int *len)
 } 
 ```
 
-In this example, `s` is the socket you want to send the data to, `buf`
-is the buffer containing the data, and `len` is a pointer to an `int`
-containing the number of bytes in the buffer.
+この例では、`s` はデータを送るソケット、`buf` はデータを含むバッファ、`len` はバッファ内のバイト数を含む `int` へのポインタだ。
 
-The function returns `-1` on error (and `errno` is still set from the
-call to `send()`). Also, the number of bytes actually sent is returned
-in `len`. This will be the same number of bytes you asked it to send,
-unless there was an error. `sendall()` will do its best, huffing and
-puffing, to send the data out, but if there's an error, it gets back to
-you right away.
+関数はエラーで `-1` を返す（`errno` は `send()` 呼び出しのまま設定されている）。また、実際に送られたバイト数は `len` に返される。エラーがなければ要求したバイト数と同じになるはずだ。`sendall()` は懸命にデータを送り出すが、エラーがあればすぐに知らせてくれる。
 
-For completeness, here's a sample call to the function:
+完全性のため、関数呼び出しのサンプル：
 
 ```{.c .numberLines}
 char buf[10] = "Beej!";
@@ -1005,62 +825,36 @@ if (sendall(s, buf, &len) == -1) {
 
 [i[`sendall()` function]>]
 
-What happens on the receiver's end when part of a packet arrives? If the
-packets are variable length, how does the receiver know when one packet
-ends and another begins? Yes, real-world scenarios are a royal pain in
-the [i[Donkeys]] donkeys. You probably have to [i[Data encapsulation]]
-_encapsulate_ (remember that from the [data encapsulation
-section](#lowlevel) way back there at the beginning?)  Read on for
-details!
+受信側でパケットの一部だけ届いたらどうなる？ パケット長が可変なら、受信側は1 つのパケットがどこで終わり次がどこから始まるかどう知る？ そう、現実のシナリオは [i[Donkeys]] ロバの尻尾を引っ張るような面倒だ。[i[Data encapsulation]] _カプセル化_ が必要だろう（最初の方の [データカプセル化の節](#lowlevel) を覚えているか？） 詳細は続きを読んで！
 
 
-## Serialization---How to Pack Data {#serialization}
+## シリアライゼーション——データのパック方法 {#serialization}
 
 [i[Serialization]<]
 
-It's easy enough to send text data across the network, you're finding,
-but what happens if you want to send some "binary" data like `int`s or
-`float`s? It turns out you have a few options.
+テキストデータをネットワーク越しに送るのは簡単だとわかってきたが、`int` や `float` のような「バイナリ」データを送りたいときはどうする？ 選択肢がいくつかある。
 
-1. Convert the number into text with a function like `sprintf()`, then
-   send the text. The receiver will parse the text back into a number
-   using a function like `strtol()`.
+1. `sprintf()` のような関数で数をテキストに変換してから送る。受信側は `strtol()` のような関数でテキストを数に戻す。
 
-2. Just send the data raw, passing a pointer to the data to `send()`.
+2. データをそのまま送る。データへのポインタを `send()` に渡す。
 
-3. Encode the number into a portable binary form. The receiver will
-   decode it.
+3. 数を移植可能なバイナリ形式にエンコードする。受信側がデコードする。
 
-Sneak preview! Tonight only!
+予告編！ 今夜限定！
 
-[_Curtain raises_]
+[_幕が上がる_]
 
-Beej says, "I prefer Method Three, above!"
+Beej が言う、「上の方法 3 が好きだ！」
 
-[_THE END_]
+[_終わり_]
 
-(Before I begin this section in earnest, I should tell you that there
-are libraries out there for doing this, and rolling your own and
-remaining portable and error-free is quite a challenge. So hunt around
-and do your homework before deciding to implement this stuff yourself. I
-include the information here for those curious about how things like
-this work.)
+（本題に入る前に、これをやるライブラリが世の中にあるし、自分で作って移植性とエラーフリーさを保つのはかなり大変だと言っておく。自分で実装する前に探して調べること。ここではこういうものがどう動くか興味がある人向けに情報を載せている。）
 
-Actually all the methods, above, have their drawbacks and advantages,
-but, like I said, in general, I prefer the third method. First, though,
-let's talk about some of the drawbacks and advantages to the other two.
+実際、上の方法すべてに長所と短所があるが、言ったように一般には 3 番目が好きだ。まず他の 2 つの長所と短所について話そう。
 
-The first method, encoding the numbers as text before sending, has the
-advantage that you can easily print and read the data that's coming over
-the wire.  Sometimes a human-readable protocol is excellent to use in a
-non-bandwidth-intensive situation, such as with [i[IRC]] [fl[Internet
-Relay Chat (IRC)|https://en.wikipedia.org/wiki/Internet_Relay_Chat]].
-However, it has the disadvantage that it is slow to convert, and the
-results almost always take up more space than the original number!
+最初の方法、送る前に数をテキストにエンコードするには、ワイヤ上のデータを簡単に表示・読める利点がある。帯域をあまり気にしない状況では、人間が読めるプロトコルは優秀だ。たとえば [i[IRC]] [fl[Internet Relay Chat (IRC)|https://en.wikipedia.org/wiki/Internet_Relay_Chat]] など。ただし変換が遅く、結果はほぼ常に元の数よりスペースを食う短所がある。
 
-Method two: passing the raw data. This one is quite easy (but
-dangerous!): just take a pointer to the data to send, and call send with
-it.
+方法 2：生データを渡す。これはかなり簡単（だが危険！）：送るデータへのポインタを取り、それで `send` を呼ぶだけだ。
 
 ```{.c}
 double d = 3490.15926535;
@@ -1068,7 +862,7 @@ double d = 3490.15926535;
 send(s, &d, sizeof d, 0);  /* DANGER--non-portable! */
 ```
 
-The receiver gets it like this:
+受信側はこう受け取る：
 
 ```{.c}
 double d;
@@ -1076,38 +870,17 @@ double d;
 recv(s, &d, sizeof d, 0);  /* DANGER--non-portable! */
 ```
 
-Fast, simple---what's not to like? Well, it turns out that not all
-architectures represent a `double` (or `int` for that matter) with the
-same bit representation or even the same byte ordering! The code is
-decidedly non-portable. (Hey---maybe you don't need portability, in
-which case this is nice and fast.)
+速くてシンプル——何が嫌？ すべてのアーキテクチャが `double`（`int` も同様）を同じビット表現、同じバイト順で表すわけではない！ コードは明らかに非移植的だ。（移植性が要らないなら、これは速くて素敵だ。）
 
-When packing integer types, we've already seen how the [i[`htons()`
-function]] `htons()`-class of functions can help keep things portable by
-transforming the numbers into [i[Byte ordering]] Network Byte Order, and
-how that's the Right Thing to do. Unfortunately, there are no similar
-functions for `float` types. Is all hope lost?
+整数型をパックするときは、[i[`htons()` function]] `htons()` 系の関数が数を [i[Byte ordering]] ネットワークバイトオーダーに変換して移植性を保つのに役立ち、それが正しいやり方だとすでに見てきた。残念ながら `float` 型用の同様の関数はない。希望はないのか？
 
-Fear not! (Were you afraid there for a second? No? Not even a little
-bit?) There is something we can do: we can pack (or "marshal", or
-"serialize", or one of a thousand million other names) the data into a
-known binary format that the receiver can unpack on the remote side.
+恐れるな！（一瞬怖かったか？ いや？ ちょっとも？）できることがある：データを受信側がリモートでアンパックできる既知のバイナリ形式にパック（または「marshal」「serialize」など、他に千百万の名前のひとつ）する。
 
-What do I mean by "known binary format"? Well, we've already seen the
-`htons()` example, right? It changes (or "encodes", if you want to think
-of it that way) a number from whatever the host format is into Network
-Byte Order. To reverse (unencode) the number, the receiver calls
-`ntohs()`.
+「既知のバイナリ形式」とは？ `htons()` の例をすでに見ただろう？ ホスト形式の数をネットワークバイトオーダーに変（または「エンコード」と考えてもよい）する。数を元に戻す（アンエンコード）には、受信側が `ntohs()` を呼ぶ。
 
-But didn't I just get finished saying there wasn't any such function for
-other non-integer types? Yes. I did. And since there's no standard way
-in C to do this, it's a bit of a pickle (that a gratuitous pun there for
-you Python fans).
+でも整数以外の型にはそんな関数はないと言い終わったばかりでは？ そうだ。そして C でこれを標準的にやる方法はないので、ちょっと困った（Python ファン向けの洒落だ）。
 
-The thing to do is to pack the data into a known format and send that
-over the wire for decoding. For example, to pack `float`s, here's
-[flx[something quick and dirty with plenty of room for
-improvement|pack.c]]:
+やることは、データを既知の形式にパックしてワイヤ越しに送り、デコード用に渡すことだ。たとえば `float` をパックするなら、[flx[手っ取り早いが改善の余地たっぷりなもの|pack.c]] がある：
 
 ```{.c .numberLines}
 #include <stdint.h>
@@ -1140,13 +913,9 @@ float ntohf(uint32_t p)
 }
 ```
 
-The above code is sort of a naive implementation that stores a `float`
-in a 32-bit number. The high bit (31) is used to store the sign of the
-number ("1" means negative), and the next seven bits (30-16) are used to
-store the whole number portion of the `float`. Finally, the remaining
-bits (15-0) are used to store the fractional portion of the number.
+上のコードは `float` を 32 ビット数に格納する素朴な実装だ。最上位ビット（31）は符号（「1」は負）、次の 7 ビット（30–16）は `float` の整数部、残り（15–0）は小数部を格納する。
 
-Usage is fairly straightforward:
+使い方はかなり直感的：
 
 ```{.c .numberLines}
 #include <stdio.h>
@@ -1167,31 +936,13 @@ int main(void)
 }
 ```
 
-On the plus side, it's small, simple, and fast. On the minus side, it's
-not an efficient use of space and the range is severely restricted---try
-storing a number greater-than 32767 in there and it won't be very happy!
-You can also see in the above example that the last couple decimal
-places are not correctly preserved.
+プラス面は小さくシンプルで速い。マイナス面はスペース効率が悪く、範囲が厳しく制限される——32767 より大きい数を入れようとするとあまり喜ばない！ 上の例でも最後の小数桁が正しく保持されていないのがわかる。
 
-What can we do instead? Well, _The_ Standard for storing floating point
-numbers is known as [i[IEEE-754]]
-[fl[IEEE-754|https://en.wikipedia.org/wiki/IEEE_754]].  Most computers
-use this format internally for doing floating point math, so in those
-cases, strictly speaking, conversion wouldn't need to be done. But if
-you want your source code to be portable, that's an assumption you can't
-necessarily make.
+代わりに何ができる？ 浮動小数点数を格納する _標準_ は [i[IEEE-754]] [fl[IEEE-754|https://en.wikipedia.org/wiki/IEEE_754]] として知られている。ほとんどのコンピュータは内部の浮動小数点演算にこの形式を使うので、厳密に言えば変換は不要な場合もある。だがソースコードを移植可能にしたいなら、それは必ずしも仮定できない。
 
-Or can you? Very probably your systems are IEEE-754, just like they're
-probably 2's complement for integers. So if you know that's what you
-have, you can just pass the data over the wire (though you need to fix the
-endianness with `htonl()` or the appropriate function—`float`s have
-endianness, too). And this is what `htons()` and its ilk do on
-big-endian systems where no conversion is necessary.
+本当に？ おそらくシステムは IEEE-754 で、整数が 2 の補数であるのと同様だ。それが手元にあるとわかっていれば、データをワイヤ越しに渡せる（ただし `htonl()` や適切な関数でエンディアンを直す必要がある——`float` にもエンディアンがある）。これがビッグエンディアンで変換不要なシステムでの `htons()` などのやり方だ。
 
-But just in case you are on a system that isn't IEEE-754, [flx[here's
-some code that encodes `float`s and `double`s into IEEE-754
-format|ieee754.c]].  (Mostly---it doesn't encode NaN or Infinity, but it
-could be modified to do that.)
+IEEE-754 でないシステムにいる場合に備えて、[flx[`float` と `double` を IEEE-754 形式にエンコードするコード|ieee754.c]] がある。（ほぼ——NaN や Infinity はエンコードしないが、修正すればできる。）
 
 ```{.c .numberLines}
 #define pack754_32(f) (pack754((f), 32, 8))
@@ -1259,13 +1010,9 @@ long double unpack754(uint64_t i, unsigned bits, unsigned expbits)
 }
 ```
 
-I put some handy macros up there at the top for packing and unpacking
-32-bit (probably a `float`) and 64-bit (probably a `double`) numbers,
-but the `pack754()` function could be called directly and told to encode
-`bits`-worth of data (`expbits` of which are reserved for the normalized
-number's exponent).
+上に 32 ビット（おそらく `float`）と 64 ビット（おそらく `double`）用の便利なマクロを置いたが、`pack754()` を直接呼んで `bits` 分のデータ（うち `expbits` は正規化数の指数用）をエンコードさせることもできる。
 
-Here's sample usage:
+使用例：
 
 ```{.c .numberLines}
 
@@ -1299,7 +1046,7 @@ int main(void)
 ```
 
 
-The above code produces this output:
+上のコードは次の出力を出す：
 
 ```
 float before : 3.1415925
@@ -1311,47 +1058,21 @@ double encoded: 0x400921FB54442D18
 double after  : 3.14159265358979311600
 ```
 
-Another question you might have is how do you pack `struct`s?
-Unfortunately for you, the compiler is free to put padding all over the
-place in a `struct`, and that means you can't portably send the whole
-thing over the wire in one chunk.  (Aren't you getting sick of hearing
-"can't do this", "can't do that"? Sorry! To quote a friend, "Whenever
-anything goes wrong, I always blame Microsoft."  This one might not be
-Microsoft's fault, admittedly, but my friend's statement is completely
-true.)
+もう一つの疑問：`struct` はどうパックする？ 残念ながらコンパイラは `struct` 内に自由にパディングを入れられるので、全体を一塊で移植可能にワイヤ越しに送れない。（「これはできない」「あれはできない」と聞き飽きた？ すまない！ 友人の言葉を借りると「何か問題が起きるたびに、いつも Microsoft のせいにする」。今回は Microsoft のせいではないかもしれないが、友人の言葉は完全に正しい。）
 
-Back to it: the best way to send the `struct` over the wire is to pack
-each field independently and then unpack them into the `struct` when
-they arrive on the other side.
+本題に戻る：`struct` をワイヤ越しに送る最善の方法は、各フィールドを独立にパックし、反対側で到着したら `struct` にアンパックすることだ。
 
-That's a lot of work, is what you're thinking. Yes, it is. One thing you
-can do is write a helper function to help pack the data for you. It'll
-be fun! Really!
+手間がかかる、と思うだろう。そうだ。できることは、パックを手伝うヘルパー関数を書くことだ。楽しいぞ！ 本当に！
 
-In the book [flr[_The Practice of Programming_|tpop]] by Kernighan and
-Pike, they implement `printf()`-like functions called `pack()` and
-`unpack()` that do exactly this. I'd link to them, but apparently those
-functions aren't online with the rest of the source from the book.
+Kernighan と Pike の [flr[_The Practice of Programming_|tpop]] では、`printf()` 風の `pack()` と `unpack()` を実装している。まさにこれをする。リンクしたいが、本のソースの残りと一緒にはオンラインにないらしい。
 
-(_The Practice of Programming_ is an excellent read. Zeus saves a kitten
-every time I recommend it.)
+（_The Practice of Programming_ は素晴らしい一冊だ。おすすめするたびに Zeus が子猫を一匹救う。）
 
-At this point, I'm going to drop a pointer to a [fl[Protocol Buffers
-implementation in C|https://github.com/protobuf-c/protobuf-c]] which
-I've never used, but looks completely respectable. Python and Perl
-programmers will want to check out their language's `pack()` and
-`unpack()` functions for accomplishing the same thing. And Java has a
-big-ol' Serializable interface that can be used in a similar way.
+ここで [fl[Protocol Buffers の C 実装|https://github.com/protobuf-c/protobuf-c]] へのポインタを落とす。使ったことはないが、まったく信頼できそうだ。Python と Perl プログラマは、同じことをする言語の `pack()` と `unpack()` をチェックしたいだろう。Java には似た使い方の大きな Serializable インターフェースがある。
 
-But if you want to write your own packing utility in C, K&P's trick is
-to use variable argument lists to make `printf()`-like functions to
-build the packets.  [flx[Here's a version I cooked up|pack2.c]] on my
-own based on that which hopefully will be enough to give you an idea of
-how such a thing can work.
+だが C で自分のパックユーティリティを書きたいなら、K&P の工夫は可変引数リストで `printf()` 風の関数を作りパケットを組み立てることだ。[flx[K&P を基に自分で作った版|pack2.c]] があり、そういうものがどう動くかのイメージには十分だろう。
 
-(This code references the `pack754()` functions, above. The `packi*()`
-functions operate like the familiar `htons()` family, except they pack
-into a `char` array instead of another integer.)
+（このコードは上の `pack754()` 関数を参照する。`packi*()` 関数はおなじみの `htons()` ファミリーと同様に動くが、別の整数ではなく `char` 配列にパックする。）
 
 ```{.c .numberLines}
 #include <stdio.h>
@@ -1760,13 +1481,7 @@ void unpack(unsigned char *buf, char *format, ...)
 }
 ```
 
-And [flx[here is a demonstration program|pack2.c]] of the above code
-that packs some data into `buf` and then unpacks it into variables. Note
-that when calling `unpack()` with a string argument (format specifier
-"`s`"), it's wise to put a maximum length count in front of it to
-prevent a buffer overrun, e.g. "`96s`". Be wary when unpacking data you
-get over the network---a malicious user might send badly-constructed
-packets in an effort to attack your system!
+そして上のコードの [flx[デモプログラム|pack2.c]] があり、データを `buf` にパックして変数にアンパックする。`unpack()` を文字列引数（書式指定子 "`s`"）で呼ぶときは、バッファオーバーランを防ぐため前に最大長を付けるのが賢明だ。たとえば "`96s`"。ネットワーク越しに受け取ったデータをアンパックするときは用心——悪意のあるユーザーがシステムを攻撃しようと不正なパケットを送ってくるかもしれない！
 
 ```{.c .numberLines}
 #include <stdio.h>
@@ -1809,242 +1524,109 @@ int main(void)
 }
 ```
 
-Whether you roll your own code or use someone else's, it's a good idea
-to have a general set of data packing routines for the sake of keeping
-bugs in check, rather than packing each bit by hand each time.
+自分でコードを書くにせよ他人のを使うにせよ、毎回手でビットをパックするより、バグを抑えるための一般的なデータパック用ルーチンを持つのがよい。
 
-When packing the data, what's a good format to use? Excellent question.
-Fortunately, [i[XDR]] [flrfc[RFC 4506|4506]], the External Data
-Representation Standard, already defines binary formats for a bunch of
-different types, like floating point types, integer types, arrays, raw
-data, etc. I suggest conforming to that if you're going to roll the data
-yourself. But you're not obligated to. The Packet Police are not right
-outside your door. At least, I don't _think_ they are.
+データをパックするとき、どんな形式がよい？ 素晴らしい質問だ。幸い、[i[XDR]] [flrfc[RFC 4506|4506]]、External Data Representation Standard が、浮動小数点型、整数型、配列、生データなど、さまざまな型のバイナリ形式をすでに定義している。自分でデータを組むならそれに従うことを勧める。ただし義務ではない。パケット警察がドアの外にいるわけではない。少なくとも、_いない_ と思う。
 
-In any case, encoding the data somehow or another before you send it is
-the right way of doing things!
+いずれにせよ、送る前に何らかの形でデータをエンコードするのが正しいやり方だ！
 
 [i[Serialization]>]
 
-## Son of Data Encapsulation {#sonofdataencap}
 
-What does it really mean to encapsulate data, anyway? In the simplest
-case, it means you'll stick a header on there with either some
-identifying information or a packet length, or both.
+## データカプセル化の続編 {#sonofdataencap}
 
-What should your header look like? Well, it's just some binary data that
-represents whatever you feel is necessary to complete your project.
+データをカプセル化するとは、いったい何を意味する？ 最も単純な場合、識別情報やパケット長、またはその両方を含むヘッダを先頭に付けることだ。
 
-Wow. That's vague.
+ヘッダはどう見えるべき？ プロジェクトを完成させるのに必要だと感じるものを表すバイナリデータだ。
 
-Okay. For instance, let's say you have a multi-user chat program that
-uses `SOCK_STREAM`s. When a user types ("says") something, two pieces of
-information need to be transmitted to the server: what was said and who
-said it.
+ふーん。曖昧だ。
 
-So far so good? "What's the problem?" you're asking.
+たとえば、マルチユーザーチャットプログラムが `SOCK_STREAM` を使うとする。ユーザーが何か打つ（「発言」する）と、サーバーに送る必要がある情報は 2 つ：何が言われたか、誰が言ったか。
 
-The problem is that the messages can be of varying lengths. One person
-named "tom" might say, "Hi", and another person named "Benjamin" might
-say, "Hey guys what is up?"
+ここまではいいか？ 「問題は？」と聞くだろう。
 
-So you `send()` all this stuff to the clients as it comes in. Your
-outgoing data stream looks like this:
+問題はメッセージの長さが可変だということだ。「tom」という人が "Hi" と言い、「Benjamin」が "Hey guys what is up?" と言うかもしれない。
+
+だから届くたびにクライアントへ全部 `send()` する。送信データストリームはこう見える：
 
 ```
 t o m H i B e n j a m i n H e y g u y s w h a t i s u p ?
 ```
 
-And so on. How does the client know when one message starts and another
-stops?  You could, if you wanted, make all messages the same length and
-just call the [i[`sendall()` function]] `sendall()` we implemented,
-[above](#sendall). But that wastes bandwidth! We don't want to `send()`
-1024 bytes just so "tom" can say "Hi".
+などなど。クライアントは 1 つのメッセージがどこで始まり次がどこで終わるかどう知る？ 望むなら、すべてのメッセージを同じ長さにして、上で実装した [i[`sendall()` function]] `sendall()` を呼べる。[上](#sendall) を参照。だがそれは帯域の無駄だ！"tom" が "Hi" と言うのに 1024 バイト `send()` したくはない。
 
-So we _encapsulate_ the data in a tiny header and packet structure. Both
-the client and server know how to pack and unpack (sometimes referred to
-as "marshal" and "unmarshal") this data. Don't look now, but we're
-starting to define a _protocol_ that describes how a client and server
-communicate!
+だからデータを小さなヘッダとパケット構造で _カプセル化_ する。クライアントもサーバーも、このデータのパックとアンパック（「marshal」「unmarshal」とも言う）の仕方を知っている。見ないで——クライアントとサーバーがどう通信するかを記述する _プロトコル_ を定義し始めている！
 
-In this case, let's assume the user name is a fixed length of 8
-characters, padded with `'\0'`. And then let's assume the data is
-variable length, up to a maximum of 128 characters. Let's have a look a
-sample packet structure that we might use in this situation:
+この場合、ユーザー名は 8 文字の固定長で、必要なら `'\0'` でパディングすると仮定しよう。データは可変長で最大 128 文字とする。この状況で使えそうなパケット構造の例：
 
-1. `len` (1 byte, unsigned)---The total length of the packet, counting
-    the 8-byte user name and chat data.
+1. `len`（1 バイト、符号なし）——8 バイトのユーザー名とチャットデータを含むパケットの総長。
 
-2. `name` (8 bytes)---The user's name, NUL-padded if necessary.
+2. `name`（8 バイト）——ユーザー名。必要なら NUL パディング。
 
-3. `chatdata` (_n_-bytes)---The data itself, no more than 128 bytes. The
-   length of the packet should be calculated as the length of this data
-   plus 8 (the length of the name field, above).
+3. `chatdata`（_n_ バイト）——データ本体。最大 128 バイト。パケット長はこのデータの長さプラス 8（上の名前フィールドの長さ）として計算すべき。
 
-Why did I choose the 8-byte and 128-byte limits for the fields? I pulled
-them out of the air, assuming they'd be long enough. Maybe, though, 8
-bytes is too restrictive for your needs, and you can have a 30-byte name
-field, or whatever.  The choice is up to you.
+なぜフィールドに 8 バイトと 128 バイトの制限を選んだ？ 空から引っ張った。十分長いだろうと仮定した。8 バイトは要件に厳しすぎるかもしれない。30 バイトの名前フィールドにしてもよい。選ぶのはあなた次第だ。
 
-Using the above packet definition, the first packet would consist of the
-following information (in hex and ASCII):
+上のパケット定義を使うと、最初のパケットは次の情報で構成される（16 進と ASCII）：
 
 ```
    0A     74 6F 6D 00 00 00 00 00      48 69
 (length)  T  o  m    (padding)         H  i
 ```
 
-And the second is similar:
+2 番目も同様：
 
 ```
    18     42 65 6E 6A 61 6D 69 6E      48 65 79 20 67 75 79 73 20 77 ...
 (length)  B  e  n  j  a  m  i  n       H  e  y     g  u  y  s     w  ...
 ```
 
-(The length is stored in Network Byte Order, of course. In this case,
-it's only one byte so it doesn't matter, but generally speaking you'll
-want all your binary integers to be stored in Network Byte Order in your
-packets.)
+（長さはもちろんネットワークバイトオーダーで格納される。この場合 1 バイトなので問題ないが、一般にはパケット内のバイナリ整数はすべてネットワークバイトオーダーで格納したい。）
 
-When you're sending this data, you should be safe and use a command
-similar to [`sendall()`](#sendall), above, so you know all the data is
-sent, even if it takes multiple calls to `send()` to get it all out.
+このデータを送るときは安全のため、上の [`sendall()`](#sendall) と同様のコマンドを使い、複数回の `send()` が必要でもデータがすべて送られたことを確認すべきだ。
 
-Likewise, when you're receiving this data, you need to do a bit of extra
-work.  To be safe, you should assume that you might receive a partial
-packet (like maybe we receive "`18 42 65 6E 6A`" from Benjamin, above,
-but that's all we get in this call to `recv()`). We need to call
-`recv()` over and over again until the packet is completely received.
+同様に、受信するときは少し余分な作業が必要だ。部分的なパケットを受け取るかもしれないと仮定すべきだ（たとえば上の Benjamin から "`18 42 65 6E 6A`" だけ受け取り、この `recv()` 呼び出しではそれだけ、など）。パケットが完全に受信されるまで `recv()` を繰り返し呼ぶ必要がある。
 
-But how? Well, we know the number of bytes we need to receive in total
-for the packet to be complete, since that number is tacked on the front
-of the packet.  We also know the maximum packet size is 1+8+128, or 137
-bytes (because that's how we defined the packet).
+でもどうやって？ パケットが完了するために受信すべき総バイト数はわかっている。パケットの先頭にその数が付いているからだ。またパケットの最大サイズは 1+8+128、つまり 137 バイトだ（パケットをそう定義したから）。
 
-There are actually a couple things you can do here. Since you know every
-packet starts off with a length, you can call `recv()` just to get the
-packet length.  Then once you have that, you can call it again
-specifying exactly the remaining length of the packet (possibly
-repeatedly to get all the data) until you have the complete packet. The
-advantage of this method is that you only need a buffer large enough for
-one packet, while the disadvantage is that you need to call `recv()` at
-least twice to get all the data.
+実際にはいくつかできることがある。すべてのパケットが長さで始まるとわかっているので、パケット長だけ得るために `recv()` を呼べる。それがわかったら、パケットの残り長さを正確に指定して再度呼ぶ（必要なら繰り返して全部得る）まで、完全なパケットが揃う。この方法の利点は 1 パケット分のバッファだけでよいこと。欠点はデータを全部得るのに少なくとも 2 回 `recv()` が必要なことだ。
 
-Another option is just to call `recv()` and say the amount you're
-willing to receive is the maximum number of bytes in a packet. Then
-whatever you get, stick it onto the back of a buffer, and finally check
-to see if the packet is complete. Of course, you might get some of the
-next packet, so you'll need to have room for that.
+別の選択肢は、受け取る量の上限をパケットの最大バイト数にして `recv()` を呼ぶことだ。得たものはバッファの末尾に足し、パケットが完了したか確認する。もちろん次のパケットの一部が混ざるかもしれないので、その分のスペースも必要だ。
 
-What you can do is declare an array big enough for two packets. This is
-your work array where you will reconstruct packets as they arrive.
+できることは、2 パケット分入る配列を宣言することだ。これが作業用バッファで、届くパケットを再構成する。
 
-Every time you `recv()` data, you'll append it into the work buffer and
-check to see if the packet is complete. That is, the number of bytes in
-the buffer is greater than or equal to the length specified in the
-header (+1, because the length in the header doesn't include the byte
-for the length itself). If the number of bytes in the buffer is less
-than 1, the packet is not complete, obviously. You have to make a
-special case for this, though, since the first byte is garbage and you
-can't rely on it for the correct packet length.
+`recv()` でデータを得るたびに作業バッファに追記し、パケットが完了したか確認する。つまり、バッファ内のバイト数がヘッダで指定された長さ以上（+1。ヘッダの長さは長さ自身の 1 バイトを含まないから）。バッファ内のバイト数が 1 未満なら明らかにパケットは未完了だ。ただし最初のバイトはゴミなので正しいパケット長に頼れず、この場合は特別扱いが必要だ。
 
-Once the packet is complete, you can do with it what you will. Use it,
-and remove it from your work buffer.
+パケットが完了したら好きに使えばよい。使ったら作業バッファから削除する。
 
-Whew! Are you juggling that in your head yet? Well, here's the second of
-the one-two punch: you might have read past the end of one packet and
-onto the next in a single `recv()` call. That is, you have a work buffer
-with one complete packet, and an incomplete part of the next packet!
-Bloody heck. (But this is why you made your work buffer large enough to
-hold _two_ packets---in case this happened!)
+ふう！ 頭の中でジャグリングしているか？ ここで二段構えの 2 発目：1 回の `recv()` で 1 パケットの終わりを越えて次のパケットの途中まで読んでいるかもしれない。つまり、作業バッファに 1 つの完全なパケットと、次のパケットの未完成部分がある！ まったく。（だから作業バッファを _2_ パケット分入る大きさにした——こうなったときのためだ！）
 
-Since you know the length of the first packet from the header, and
-you've been keeping track of the number of bytes in the work buffer, you
-can subtract and calculate how many of the bytes in the work buffer
-belong to the second (incomplete) packet. When you've handled the first
-one, you can clear it out of the work buffer and move the partial second
-packet down the to front of the buffer so it's all ready to go for the
-next `recv()`.
+ヘッダから最初のパケットの長さがわかり、作業バッファ内のバイト数を追跡してきたので、作業バッファのうち 2 番目（未完成）パケットに属するバイト数を引き算できる。最初を処理したら作業バッファから消し、未完成の 2 番目をバッファ先頭へ移して次の `recv()` の準備をする。
 
-(Some of you readers will note that actually moving the partial second
-packet to the beginning of the work buffer takes time, and the program
-can be coded to not require this by using a circular buffer.
-Unfortunately for the rest of you, a discussion on circular buffers is
-beyond the scope of this article. If you're still curious, grab a data
-structures book and go from there.)
+（読者の一部は、未完成の 2 番目パケットを作業バッファ先頭へ移すのに時間がかかること、循環バッファを使えばこれを不要にできるプログラムもあると気づくだろう。残念ながら循環バッファの議論はこの記事の範囲外だ。まだ興味があればデータ構造の本を手に入れてそこから始めてほしい。）
 
-I never said it was easy. Ok, I did say it was easy. And it is; you just
-need practice and pretty soon it'll come to you naturally. By
-[i[Excalibur]] Excalibur I swear it!
+簡単だとは言わなかった。いや、簡単だと言った。そして簡単だ。練習すれば自然にできる。[i[Excalibur]] エクスカリバーにかけて誓う！
 
 
-## Broadcast Packets---Hello, World!
+## ブロードキャストパケット——Hello, World!
 
-So far, this guide has talked about sending data from one host to one
-other host. But it is possible, I insist, that you can, with the proper
-authority, send data to multiple hosts _at the same time_!
+これまでこのガイドは、1 ホストから別の 1 ホストへデータを送ることについて話してきた。だが可能だと主張する——適切な権限があれば、_同時に_ 複数ホストへデータを送れる！
 
-With [i[UDP]] UDP (only UDP, not TCP) and standard IPv4, this is done
-through a mechanism called [i[Broadcast]] _broadcasting_. With IPv6,
-broadcasting isn't supported, and you have to resort to the often
-superior technique of _multicasting_, which, sadly I won't be discussing
-at this time. But enough of the starry-eyed future---we're stuck in the
-32-bit present.
+[i[UDP]] UDP（UDP のみ、TCP ではない）と標準 IPv4 では、[i[Broadcast]] _ブロードキャスト_ という仕組みで行う。IPv6 ではブロードキャストはサポートされず、しばしば優れた _マルチキャスト_ に頼る必要があるが、残念ながら今回は論じない。だが夢見がちな未来はここまで——32 ビットの現在にいる。
 
-But wait! You can't just run off and start broadcasting willy-nilly; You
-have to [i[`setsockopt()` function]] set the socket option
-[i[`SO_BROADCAST` macro]] `SO_BROADCAST` before you can send a broadcast
-packet out on the network. It's like a one of those little plastic
-covers they put over the missile launch switch! That's just how much
-power you hold in your hands!
+だが待て！ いきなりブロードキャストし始けてはいけない。ネットワークへブロードキャストパケットを送る前に、[i[`setsockopt()` function]] ソケットオプション [i[`SO_BROADCAST` macro]] `SO_BROADCAST` を設定しなければならない。ミサイル発射スイッチにかぶせる小さなプラスチックカバーのようなものだ！ 手にする力はそれほどのものだ！
 
-But seriously, though, there is a danger to using broadcast packets, and
-that is: every system that receives a broadcast packet must undo all the
-onion-skin layers of data encapsulation until it finds out what port the
-data is destined to. And then it hands the data over or discards it. In
-either case, it's a lot of work for each machine that receives the
-broadcast packet, and since it is all of them on the local network, that
-could be a lot of machines doing a lot of unnecessary work. When the
-game Doom first came out, this was a complaint about its network code.
+だが真面目な話、ブロードキャストパケットには危険がある。ブロードキャストパケットを受け取るすべてのシステムは、データが向かうポートがわかるまでデータカプセル化の玉ねぎの皮をすべて剥がさなければならない。そしてデータを渡すか捨てる。いずれにせよ、受信する各マシンにとって大仕事だ。ローカルネットワーク上のすべてが対象なので、不要な仕事をするマシンが大量にあるかもしれない。ゲーム Doom が初めて出たとき、ネットワークコードについてこういう不満があった。
 
-Now, there is more than one way to skin a cat[^6178]... wait a minute.
-Is there really more than one way to skin a cat? What kind of expression
-is that? Uh, and likewise, there is more than one way to send a
-broadcast packet. So, to get to the meat and potatoes of the whole
-thing: how do you specify the destination address for a broadcast
-message? There are two common ways:
+さて、猫の皮の剥ぎ方は一つとは限らない[^6178]……ちょっと待て。本当に猫の皮の剥ぎ方は一つより多いのか？ どんな表現だ？ そして同様に、ブロードキャストパケットを送る方法も一つではない。本題へ：ブロードキャストメッセージの宛先アドレスはどう指定する？ よくある方法は 2 つ：
 
-[^6178]: For the record, I love cats. They're the best. I've had many
-    beloved feline companions over the years. Though I acknowledge the
-    some object to this morbid, figurative expression whose etymology
-    has been lost to time, I think this portion of the guide is best
-    served by its use.
+[^6178]: 記録として、猫は大好きだ。最高の相棒だ。長年たくさんの愛猫と過ごしてきた。由来は時の流れに失われたこの血みどろの比喩表現に異論を唱える人もいるが、このガイドのこの部分にはその使用が最適だと思う。
 
-1. Send the data to a specific subnet's broadcast address. This is the
-   subnet's network number with all one-bits set for the host portion of
-   the address. For instance, at home my network is `192.168.1.0`, my
-   netmask is `255.255.255.0`, so the last byte of the address is my
-   host number (because the first three bytes, according to the netmask,
-   are the network number). So my broadcast address is `192.168.1.255`.
-   Under Unix, the `ifconfig` command will actually give you all this
-   data. (If you're curious, the bitwise logic to get your broadcast
-   address is `network_number` OR (NOT `netmask`).) You can send this
-   type of broadcast packet to remote networks as well as your local
-   network, but you run the risk of the packet being dropped by the
-   destination's router.  (If they didn't drop it, then some random
-   smurf could start flooding their LAN with broadcast traffic.)
+1. 特定サブネットのブロードキャストアドレスへ送る。サブネットのネットワーク番号に、ホスト部をすべて 1 にしたものだ。たとえば自宅ではネットワークが `192.168.1.0`、ネットマスクが `255.255.255.0` なので、アドレスの最後のバイトがホスト番号（ネットマスクによると最初の 3 バイトがネットワーク番号）。だからブロードキャストアドレスは `192.168.1.255` だ。Unix では `ifconfig` コマンドが実際にこれらすべてを教えてくれる。（興味があれば、ブロードキャストアドレスのビット論理は `network_number` OR (NOT `netmask`) だ。）この種のブロードキャストパケットはローカルだけでなくリモートネットワークにも送れるが、宛先のルーターがパケットを捨てるリスクがある。（捨てなければ、どこかのスマーフが LAN をブロードキャストトラフィックで溢れさせ始めるかもしれない。）
 
-2. Send the data to the "global" broadcast address. This is
-   [i[`255.255.255.255`]] `255.255.255.255`, aka [i[`INADDR_BROADCAST`
-   macro]] `INADDR_BROADCAST`. Many machines will automatically bitwise
-   AND this with your network number to convert it to a network
-   broadcast address, but some won't. It varies. Routers do not forward
-   this type of broadcast packet off your local network, ironically
-   enough.
+2. 「グローバル」ブロードキャストアドレスへ送る。これは [i[`255.255.255.255`]] `255.255.255.255`、別名 [i[`INADDR_BROADCAST` macro]] `INADDR_BROADCAST` だ。多くのマシンはこれをネットワーク番号と自動的にビットごと AND してネットワークブロードキャストアドレスに変換するが、しないものもある。さまざまだ。ルーターは皮肉なことに、この種のブロードキャストパケットをローカルネットワークの外へ転送しない。
 
-So what happens if you try to send data on the broadcast address without
-first setting the `SO_BROADCAST` socket option? Well, let's fire up good
-old [`talker` and `listener`](#datagram) and see what happens.
+では最初に `SO_BROADCAST` ソケットオプションを設定せずにブロードキャストアドレスへデータを送ろうとするとどうなる？ 古い [`talker` と `listener`](#datagram) を起動して確かめてみよう。
 
 ```
 $ talker 192.168.1.2 foo
@@ -2055,13 +1637,9 @@ $ talker 255.255.255.255 foo
 sendto: Permission denied
 ```
 
-Yes, it's not happy at all...because we didn't set the `SO_BROADCAST`
-socket option. Do that, and now you can `sendto()` anywhere you want!
+そう、まったく喜ばない……`SO_BROADCAST` ソケットオプションを設定していないからだ。設定すれば、好きなところへ `sendto()` できる！
 
-In fact, that's the _only difference_ between a UDP application that can
-broadcast and one that can't. So let's take the old `talker` application
-and add one section that sets the `SO_BROADCAST` socket option. We'll
-call this program [flx[`broadcaster.c`|broadcaster.c]]:
+実際、UDP アプリがブロードキャストできるかできないかの _唯一の違い_ はそれだけだ。だから古い `talker` アプリを取り、`SO_BROADCAST` ソケットオプションを設定する部分を 1 つ足そう。このプログラムを [flx[`broadcaster.c`|broadcaster.c]] と呼ぶ：
 
 ```{.c .numberLines}
 /*
@@ -2135,12 +1713,7 @@ int main(int argc, char *argv[])
 }
 ```
 
-What's different between this and a "normal" UDP client/server
-situation?  Nothing! (With the exception of the client being allowed to
-send broadcast packets in this case.) As such, go ahead and run the old
-UDP [`listener`](#datagram) program in one window, and `broadcaster` in
-another. You should be now be able to do all those sends that failed,
-above.
+これと「普通の」UDP クライアント／サーバー状況の違いは？ 何もない！（この場合クライアントがブロードキャストパケットを送れること以外。）なので、1 つのウィンドウで古い UDP [`listener`](#datagram) プログラムを動かし、別のウィンドウで `broadcaster` を動かせばいい。上で失敗した送信がすべてできるはずだ。
 
 ```
 $ broadcaster 192.168.1.2 foo
@@ -2151,25 +1724,10 @@ $ broadcaster 255.255.255.255 foo
 sent 3 bytes to 255.255.255.255
 ```
 
-And you should see `listener` responding that it got the packets. (If
-`listener` doesn't respond, it could be because it's bound to an IPv6
-address. Try changing the `AF_INET6` in `listener.c` to `AF_INET` to
-force IPv4.)
+`listener` がパケットを受け取ったと応答するはずだ。（`listener` が応答しない場合、IPv6 アドレスにバインドしている可能性がある。`listener.c` の `AF_INET6` を `AF_INET` に変えて IPv4 を強制してみてほしい。）
 
-Well, that's kind of exciting. But now fire up `listener` on another
-machine next to you on the same network so that you have two copies
-going, one on each machine, and run `broadcaster` again with your
-broadcast address... Hey! Both `listener`s get the packet even though
-you only called `sendto()` once! Cool!
+さて、これはちょっとワクワクする。だが同じネットワーク上の隣の別マシンでも `listener` を起動して 2 台で動かし、ブロードキャストアドレスで再び `broadcaster` を実行してみよう……おお！ `sendto()` は 1 回しか呼んでいないのに両方の `listener` がパケットを受け取る！ クールだ！
 
-If the `listener` gets data you send directly to it, but not data on the
-broadcast address, it could be that you have a [i[Firewall]] firewall on
-your local machine that is blocking the packets. (Yes, [i[Pat]] Pat and
-[i[Bapper]] Bapper, thank you for realizing before I did that this is
-why my sample code wasn't working. I told you I'd mention you in the
-guide, and here you are. So _nyah_.)
+`listener` が直接送ったデータは受け取るがブロードキャストアドレスのデータは受け取らない場合、ローカルマシンの [i[Firewall]] ファイアウォールがパケットをブロックしている可能性がある。（そう、[i[Pat]] Pat と [i[Bapper]] Bapper、サンプルコードが動かなかった理由がこれだと私より先に気づいてくれてありがとう。ガイドで名前を出すと言ったから、ここにいる。だから _にゃー_。）
 
-Again, be careful with broadcast packets. Since every machine on the LAN
-will be forced to deal with the packet whether it `recvfrom()`s it or
-not, it can present quite a load to the entire computing network. They
-are definitely to be used sparingly and appropriately.
+繰り返すが、ブロードキャストパケットには注意すること。LAN 上のすべてのマシンは `recvfrom()` するかどうかに関わらずパケットに対処を強いられるので、コンピューティングネットワーク全体にかなりの負荷になりうる。控えめに、適切な場面でのみ使うことだ。

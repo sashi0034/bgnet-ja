@@ -1,129 +1,72 @@
-# Common Questions
+# よくある質問
 
-**Where can I get those header files?**
+**ヘッダファイルはどこで手に入る？**
 
-[i[Header files]] If you don't have them on your system already, you
-probably don't need them. Check the manual for your particular platform.
-If you're building for [i[Windows]] Windows, you only need to `#include
-<winsock.h>`.
+[i[Header files]] システムにまだ入っていなければ、おそらく必要ない。使っているプラットフォームのマニュアルを確認してほしい。[i[Windows]] Windows 向けにビルドしているなら、`#include <winsock.h>` だけで足りる。
 
-**What do I do when `bind()` reports [i[Address already in use]]
-"Address already in use"?**
+**`bind()` が [i[Address already in use]]「Address already in use」を報告したらどうする？**
 
-You have to use [i[`setsockopt()` function]] `setsockopt()` with the
-[i[`SO_REUSEADDR` macro]] `SO_REUSEADDR` option on the listening socket.
-Check out the [i[`bind()` function]] [section on `bind()`](#bind) and
-the [i[`select()` function]] [section on `select()`](#select) for an
-example.
+リスニングソケットに [i[`setsockopt()` function]] `setsockopt()` と [i[`SO_REUSEADDR` macro]] `SO_REUSEADDR` オプションを使う必要がある。[i[`bind()` function]] [`bind()` の節](#bind) と [i[`select()` function]] [`select()` の節](#select) に例がある。
 
-**How do I get a list of open sockets on the system?**
+**システム上のオープンソケット一覧はどうやって取得する？**
 
-Use the [i[`netstat` command]] `netstat`. Check the `man` page for full
-details, but you should get some good output just typing:
+[i[`netstat` command]] `netstat` を使う。詳細は `man` ページを見てほしいが、次のように打つだけでも十分な出力が得られる：
 
 ```
 $ netstat
 ```
 
-The only trick is determining which socket is associated with which
-program.  `:-)`
+コツは、どのソケットがどのプログラムに紐づいているかを見分けることだ。`:-)`
 
-**How can I view the routing table?**
+**ルーティングテーブルはどうやって見る？**
 
-Run the [i[`route` command]] `route` command (in `/sbin` on most
-Linuxes) or the command [i[`netstat` command]] `netstat -r`. Or the
-command [i[`ip route` command]] `ip route`.
+[i[`route` command]] `route` コマンド（多くの Linux では `/sbin` にある）か、[i[`netstat` command]] `netstat -r`、あるいは [i[`ip route` command]] `ip route` を実行する。
 
-**How can I run the client and server programs if I only have one
-computer?  Don't I need a network to write network programs?**
+**コンピュータが1台しかないのに、クライアントとサーバープログラムをどうやって動かす？ ネットワークプログラムを書くにはネットワークが必要じゃない？**
 
-Fortunately for you, virtually all machines implement a [i[Loopback
-device]] loopback network "device" that sits in the kernel and pretends
-to be a network card. (This is the interface listed as "`lo`" in the
-routing table.)
+幸いなことに、ほぼすべてのマシンには [i[Loopback device]] ループバックネットワーク「デバイス」が実装されていて、カーネル内にあり、ネットワークカードのふりをする。（ルーティングテーブルで「`lo`」として列挙されているインターフェースだ。）
 
-Pretend you're logged into a machine named [i[Goat]] "`goat`". Run the
-client in one window and the server in another. Or start the server in
-the background ("`server &`") and run the client in the same window. The
-upshot of the loopback device is that you can either `client goat` or
-[i[`localhost`]] `client localhost` (since "`localhost`" is likely
-defined in your `/etc/hosts` file) and you'll have the client talking to
-the server without a network!
+[i[Goat]] 「`goat`」という名前のマシンにログインしていると仮定しよう。1つのウィンドウでクライアント、もう1つでサーバーを動かす。あるいはサーバーをバックグラウンドで起動（「`server &`」）して、同じウィンドウでクライアントを動かす。ループバックデバイスの要点は、`client goat` でも [i[`localhost`]] `client localhost`（「`localhost`」は `/etc/hosts` に定義されていることが多い）でも、ネットワークなしでクライアントとサーバーが会話できることだ。
 
-In short, no changes are necessary to any of the code to make it run on
-a single non-networked machine! Huzzah!
+要するに、1台の非ネットワークマシンで動かすためにコードを変える必要はまったくない！ やったね！
 
-**How can I tell if the remote side has closed connection?**
+**リモート側が接続を閉じたかどうかはどうやって分かる？**
 
-You can tell because `recv()` will return `0`.
+`recv()` が `0` を返すので分かる。
 
-**How do I implement a [i[`ping` command]] "ping" utility? What is
-[i[ICMP]] ICMP?  Where can I find out more about [i[Raw sockets]] raw
-sockets and `SOCK_RAW`?**
+**[i[`ping` command]]「ping」ユーティリティはどう実装する？ [i[ICMP]] ICMP とは？ [i[Raw sockets]] 生ソケットや `SOCK_RAW` についてもっと知るには？**
 
 [i[`SOCK_RAW` macro]]
 
-All your raw sockets questions will be answered in [W. Richard Stevens'
-UNIX Network Programming books](#books). Also, look in the `ping/`
-subdirectory in Stevens' UNIX Network Programming source code,
-[fl[available online|http://www.unpbook.com/src.html]].
+生ソケットに関する疑問はすべて [W. Richard Stevens の UNIX Network Programming シリーズ](#books) で答えが見つかる。Stevens の UNIX Network Programming ソースコードの `ping/` サブディレクトリも見てほしい。[fl[オンラインで入手可能|http://www.unpbook.com/src.html]]。
 
-**How do I change or shorten the timeout on a call to `connect()`?**
+**`connect()` 呼び出しのタイムアウトを変更したり短くしたりするには？**
 
-Instead of giving you exactly the same answer that W. Richard Stevens
-would give you, I'll just refer you to [fl[`lib/connect_nonb.c` in the
-UNIX Network Programming source code|http://www.unpbook.com/src.html]].
+W. Richard Stevens がそのまま答えるであろう内容をここで繰り返す代わりに、[fl[UNIX Network Programming ソースコードの `lib/connect_nonb.c`|http://www.unpbook.com/src.html]] を参照してほしい。
 
-The gist of it is that you make a socket descriptor with `socket()`,
-[set it to non-blocking](#blocking), call `connect()`, and if all goes
-well `connect()` will return `-1` immediately and `errno` will be set to
-`EINPROGRESS`. Then you call [`select()`](#select) with whatever timeout
-you want, passing the socket descriptor in both the read and write sets.
-If it doesn't timeout, it means the `connect()` call completed. At this
-point, you'll have to use `getsockopt()` with the `SO_ERROR` option to
-get the return value from the `connect()` call, which should be zero if
-there was no error.
+要点は、`socket()` でソケットディスクリプタを作り、[非ブロッキングに設定](#blocking)し、`connect()` を呼ぶこと。うまくいけば `connect()` はすぐ `-1` を返し、`errno` は `EINPROGRESS` になる。次に好きなタイムアウトで [`select()`](#select) を呼び、ソケットディスクリプタを読み取りセットと書き込みセットの両方に渡す。タイムアウトしなければ `connect()` 呼び出しは完了したということ。この時点で `getsockopt()` と `SO_ERROR` オプションを使い、`connect()` 呼び出しの戻り値（エラーがなければ 0 のはず）を取得する。
 
-Finally, you'll probably want to set the socket back to be blocking
-again before you start transferring data over it.
+最後に、ソケット上でデータ転送を始める前に、おそらくソケットを再びブロッキングに戻したいだろう。
 
-Notice that this has the added benefit of allowing your program to do
-something else while it's connecting, too. You could, for example, set
-the timeout to something low, like 500 ms, and update an indicator
-onscreen each timeout, then call `select()` again. When you've called
-`select()` and timed-out, say, 20 times, you'll know it's time to give
-up on the connection.
+これには接続中にプログラムが別のことをする余裕も生まれる、という副次効果もある。たとえばタイムアウトを 500 ms など低く設定し、タイムアウトのたびに画面上のインジケータを更新してから、また `select()` を呼ぶ。`select()` を呼んでタイムアウトした回数が、たとえば 20 回になったら、接続を諦める時だと分かる。
 
-Like I said, check out Stevens' source for a perfectly excellent
-example.
+言ったとおり、Stevens のソースに完璧な例がある。
 
-**How do I build for Windows?**
+**Windows 向けにビルドするには？**
 
-First, delete Windows and install Linux or BSD. `};-)`. No, actually,
-just see the [section on building for Windows](#windows) in the
-introduction.
+まず Windows を消して Linux か BSD を入れろ。`};-)` いや、本当は [はじめにの Windows 向けビルドの節](#windows) を見てほしい。
 
-**How do I build for Solaris/SunOS? I keep getting linker errors when I
-try to compile!**
+**Solaris/SunOS 向けにビルドするには？ コンパイルしようとするとリンカエラーが出続ける！**
 
-The linker errors happen because Sun boxes don't automatically compile
-in the socket libraries. See the [section on building for
-Solaris/SunOS](#solaris) in the introduction for an example of how to do
-this.
+リンカエラーは、Sun 系マシンではソケットライブラリが自動ではリンクされないから起きる。[はじめにの Solaris/SunOS 向けビルドの節](#solaris) に例がある。
 
-**Why does `select()` keep falling out on a signal?**
+**`select()` がシグナルで抜けてしまうのはなぜ？**
 
-Signals tend to cause blocked system calls to return `-1` with `errno`
-set to `EINTR`. When you set up a signal handler with [i[`sigaction()`
-function]] `sigaction()`, you can set the flag [i[`SA_RESTART` macro]]
-`SA_RESTART`, which is supposed to restart the system call after it was
-interrupted.
+シグナルは、ブロック中のシステムコールが `-1` を返し `errno` が `EINTR` になる原因になりやすい。[i[`sigaction()` function]] `sigaction()` でシグナルハンドラを設定するとき、[i[`SA_RESTART` macro]] `SA_RESTART` フラグを設定できる。これは中断されたあとシステムコールを再開するはずだ。
 
-Naturally, this doesn't always work.
+当然、いつもうまくいくわけではない。
 
-My favorite solution to this involves a [i[`goto` statement]] `goto`
-statement. You know this irritates your professors to no end, so go for
-it!
+お気に入りの解決策は [i[`goto` statement]] `goto` 文を使うことだ。教授をイラッとさせる方法だから、ぜひやってみろ！
 
 ```{.c .numberLines}
 select_restart:
@@ -137,16 +80,11 @@ if ((err = select(fdmax+1, &readfds, NULL, NULL, NULL)) == -1) {
 } 
 ```
 
-Sure, you don't _need_ to use `goto` in this case; you can use other
-structures to control it. But I think the `goto` statement is actually
-cleaner.
+確かに、この場合に `goto` を使う _必要_ はない。制御のために別の構造を使ってもよい。でも `goto` 文のほうが実際にはすっきりしていると思う。
 
-**How can I implement a timeout on a call to `recv()`?**
+**`recv()` 呼び出しにタイムアウトを実装するには？**
 
-[i[`recv()` function-->timeout]] Use [i[`select()` function]]
-[`select()`](#select)! It allows you to specify a timeout parameter for
-socket descriptors that you're looking to read from. Or, you could wrap
-the entire functionality in a single function, like this:
+[i[`recv()` function-->timeout]] [i[`select()` function]] [`select()`](#select) を使え！ 読み取りたいソケットディスクリプタにタイムアウトパラメータを指定できる。あるいは、次のように機能全体を1つの関数にまとめてもよい：
 
 ```{.c .numberLines}
 #include <unistd.h>
@@ -196,79 +134,56 @@ else if (n == -2) {
 . 
 ```
 
-Notice that [i[`recvtimeout()` function]] `recvtimeout()` returns `-2`
-in case of a timeout. Why not return `0`? Well, if you recall, a return
-value of `0` on a call to `recv()` means that the remote side closed the
-connection. So that return value is already spoken for, and `-1` means
-"error", so I chose `-2` as my timeout indicator.
+[i[`recvtimeout()` function]] `recvtimeout()` はタイムアウト時に `-2` を返すことに注意。なぜ `0` じゃない？ 思い出してほしいが、`recv()` が `0` を返すのはリモート側が接続を閉じたという意味だ。つまりその戻り値はもう使われていて、`-1` は「エラー」なので、タイムアウト指標には `-2` を選んだ。
 
-**How do I [i[Encryption]] encrypt or compress the data before sending
-it through the socket?**
+**ソケット経由で送る前にデータを [i[Encryption]] 暗号化したり圧縮したりするには？**
 
-One easy way to do encryption is to use [i[SSL]] SSL (secure sockets
-layer), but that's beyond the scope of this guide. [i[OpenSSL]] (Check
-out the [fl[OpenSSL project|https://www.openssl.org/]] for more info.)
+暗号化の簡単な方法の1つは [i[SSL]] SSL（Secure Sockets Layer）を使うことだが、それは本ガイドの範囲外だ。[i[OpenSSL]]（詳細は [fl[OpenSSL プロジェクト|https://www.openssl.org/]] を参照。）
 
-But assuming you want to plug in or implement your own [i[Compression]]
-compressor or encryption system, it's just a matter of thinking of your
-data as running through a sequence of steps between both ends. Each step
-changes the data in some way.
+ただし独自の [i[Compression]] 圧縮器や暗号化システムを差し込んだり実装したりするなら、両端の間をデータが一連のステップを通過するものと考えればよい。各ステップでデータは何らかの形で変わる。
 
-1. server reads data from file (or wherever)
-2. server encrypts/compresses data  (you add this part)
-3. server `send()`s encrypted data
+1. サーバーがファイル（など）からデータを読む
+2. サーバーがデータを暗号化／圧縮する（ここを自分で追加）
+3. サーバーが暗号化データを `send()` する
 
-Now the other way around:
+逆方向はこう：
 
-1. client `recv()`s encrypted data
-2. client decrypts/decompresses data  (you add this part)
-3. client writes data to file (or wherever)
+1. クライアントが暗号化データを `recv()` する
+2. クライアントがデータを復号／展開する（ここを自分で追加）
+3. クライアントがファイル（など）にデータを書く
 
-If you're going to compress and encrypt, just remember to compress
-first. `:-)`
+圧縮と暗号化の両方をするなら、先に圧縮することを忘れないで。`:-)`
 
-Just as long as the client properly undoes what the server does, the
-data will be fine in the end no matter how many intermediate steps you
-add.
+クライアントがサーバーの処理を正しく元に戻せば、途中にいくらステップを挟んでも最終的なデータは問題ない。
 
-So all you need to do to use my code is to find the place between where
-the data is read and the data is sent (using `send()`) over the network,
-and stick some code in there that does the encryption.
+つまり、私のコードを使うには、データが読み込まれてから `send()` でネットワークに送られるまでの間に、暗号化を行うコードを差し込めばよい。
 
-**What is this "`PF_INET`" I keep seeing? Is it related to `AF_INET`?**
+**「`PF_INET`」って何度も見るけど、`AF_INET` と関係ある？**
 
 [i[`PF_INET` macro]] [i[`AF_INET` macro]]
 
-Yes, yes it is. See [the section on `socket()`](#socket) for details.
+ある、大いにある。詳細は [`socket()` の節](#socket) を参照。
 
-**How can I write a server that accepts shell commands from a client and
-executes them?**
+**クライアントからシェルコマンドを受け取って実行するサーバーはどう書く？**
 
-For simplicity, lets say the client `connect()`s, `send()`s, and
-`close()`s the connection (that is, there are no subsequent system calls
-without the client connecting again).
+簡単にするため、クライアントは `connect()` して `send()` して `close()` する（つまり、クライアントが再接続しない限り後続のシステムコールはない）としよう。
 
-The process the client follows is this:
+クライアントの手順はこう：
 
-1. `connect()` to server
-2. `send("/sbin/ls > /tmp/client.out")`
-3. `close()` the connection
+1. サーバーに `connect()` する
+2. `send("/sbin/ls > /tmp/client.out")` する
+3. 接続を `close()` する
 
-Meanwhile, the server is handling the data and executing it:
+一方、サーバーはデータを処理して実行する：
 
-1. `accept()` the connection from the client
-2. `recv(str)` the command string
-3. `close()` the connection
-4. `system(str)` to run the command
+1. クライアントからの接続を `accept()` する
+2. コマンド文字列を `recv(str)` する
+3. 接続を `close()` する
+4. `system(str)` でコマンドを実行する
 
-[i[Security]] _Beware!_  Having the server execute what the client says
-is like giving remote shell access and people can do things to your
-account when they connect to the server. For instance, in the above
-example, what if the client sends "`rm -rf ~`"? It deletes everything in
-your account, that's what!
+[i[Security]] _注意！_ サーバーがクライアントの言うことを実行するのは、リモートシェルアクセスを与えるようなもので、接続するとアカウント上で好き放題される。上の例だと、クライアントが「`rm -rf ~`」を送ったらどうなる？ アカウント内のすべてが消える、それだけだ！
 
-So you get wise, and you prevent the client from using any except for a
-couple utilities that you know are safe, like the `foobar` utility:
+賢くなって、クライアントには安全だと分かっている `foobar` ユーティリティなど、ほんの数個のユーティリティしか使わせないようにする：
 
 ```{.c}
 if (!strncmp(str, "foobar", 6)) {
@@ -277,129 +192,60 @@ if (!strncmp(str, "foobar", 6)) {
 } 
 ```
 
-But you're still unsafe, unfortunately: what if the client enters
-"`foobar; rm -rf ~`"? The safest thing to do is to write a little
-routine that puts an escape ("`\`") character in front of all
-non-alphanumeric characters (including spaces, if appropriate) in the
-arguments for the command.
+でも残念ながらまだ安全ではない。クライアントが「`foobar; rm -rf ~`」と入力したらどうなる？ 最も安全なのは、コマンド引数の英数字以外（必要なら空白も含む）すべての前にエスケープ文字（「`\`」）を置く小さなルーチンを書くことだ。
 
-As you can see, security is a pretty big issue when the server starts
-executing things the client sends.
+見てのとおり、サーバーがクライアントから送られたものを実行し始めると、セキュリティはかなり大きな問題になる。
 
-**I'm sending a slew of data, but when I `recv()`, it only receives 536
-bytes or 1460 bytes at a time. But if I run it on my local machine, it
-receives all the data at the same time. What's going on?**
+**大量のデータを送っているのに、`recv()` すると 536 バイトか 1460 バイトずつしか受信されない。ローカルマシンで動かすと一度に全部受信される。何が起きている？**
 
-You're hitting the [i[MTU]] MTU---the maximum size the physical medium
-can handle. On the local machine, you're using the loopback device which
-can handle 8K or more no problem. But on Ethernet, which can only handle
-1500 bytes with a header, you hit that limit. Over a modem, with 576 MTU
-(again, with header), you hit the even lower limit.
+[i[MTU]] MTU——物理媒体が扱える最大サイズ——に当たっている。ローカルマシンでは 8K 以上も問題なく扱えるループバックデバイスを使っている。Ethernet ではヘッダ付きで 1500 バイトまでしか扱えないので、その上限にぶつかる。モデム経由で MTU が 576（こちらもヘッダ付き）なら、さらに低い上限に当たる。
 
-You have to make sure all the data is being sent, first of all. (See the
-[`sendall()`](#sendall) function implementation for details.) Once
-you're sure of that, then you need to call `recv()` in a loop until all
-your data is read.
+まずすべてのデータが送られていることを確認する必要がある（詳細は [`sendall()`](#sendall) 関数の実装を参照）。それが確かになったら、すべて読み終わるまで `recv()` をループで呼ぶ。
 
-Read the section [Son of Data Encapsulation](#sonofdataencap) for
-details on receiving complete packets of data using multiple calls to
-`recv()`.
+`recv()` を複数回呼んで完全なパケットを受信する詳細は、[データカプセル化の続き](#sonofdataencap) の節を読んでほしい。
 
-**I'm on a Windows box and I don't have the `fork()` system call or any
-kind of `struct sigaction`. What to do?**
+**Windows マシンにいて `fork()` システムコールも `struct sigaction` もない。どうすれば？**
 
-[i[`fork()` function]] If they're anywhere, they'll be in POSIX
-libraries that may have shipped with your compiler. Since I don't have a
-Windows box, I really can't tell you the answer, but I seem to remember
-that Microsoft has a POSIX compatibility layer and that's where `fork()`
-would be. (And maybe even `sigaction`.)
+[i[`fork()` function]] どこかにあるなら、コンパイラに同梱されている POSIX ライブラリの中だろう。Windows マシンを持っていないので正確な答えは言えないが、Microsoft には POSIX 互換レイヤーがあって、そこに `fork()` があるはずだ。（`sigaction` もかもしれない。）
 
-Search the help that came with VC++ for "fork" or "POSIX" and see if it
-gives you any clues.
+VC++ に付属のヘルプで「fork」や「POSIX」を検索して、手がかりがないか見てほしい。
 
-If that doesn't work at all, ditch the `fork()`/`sigaction` stuff and
-replace it with the Win32 equivalent: [i[`CreateProcess()` function]]
-`CreateProcess()`. I don't know how to use `CreateProcess()`---it takes
-a bazillion arguments, but it should be covered in the docs that came
-with VC++.
+それでもダメなら、`fork()`／`sigaction` 関連は捨てて、Win32 相当の [i[`CreateProcess()` function]] `CreateProcess()` に置き換える。`CreateProcess()` の使い方は知らない——引数が山ほどあるが、VC++ のドキュメントに載っているはずだ。
 
 [[book-pagebreak]]
 
-**[i[Firewall]] I'm behind a firewall---how do I let people outside the
-firewall know my IP address so they can connect to my machine?**
+**[i[Firewall]] ファイアウォールの内側にいる——外側の人に IP アドレスを知らせてマシンに接続してもらうには？**
 
-Unfortunately, the purpose of a firewall is to prevent people outside
-the firewall from connecting to machines inside the firewall, so
-allowing them to do so is basically considered a breach of security.
+残念ながら、ファイアウォールの目的は外側から内側のマシンへの接続を防ぐことなので、それを許すのは基本的にセキュリティ違反とみなされる。
 
-This isn't to say that all is lost. For one thing, you can still often
-`connect()` through the firewall if it's doing some kind of masquerading
-or NAT or something like that. Just design your programs so that you're
-always the one initiating the connection, and you'll be fine.
+すべてが失われたわけではない。1つは、マスカレードや NAT などをしているファイアウォールなら、しばしば `connect()` で越えられることがある。プログラムは常に自分から接続を開始するように設計すれば問題ない。
 
-[i[Firewall-->poking holes in]] If that's not satisfactory, you can ask
-your sysadmins to poke a hole in the firewall so that people can connect
-to you. The firewall can forward to you either through it's NAT
-software, or through a proxy or something like that.
+[i[Firewall-->poking holes in]] それでは不十分なら、sysadmin にファイアウォールに穴を開けてもらい、外から接続できるように頼める。ファイアウォールは NAT ソフトウェア経由でも、プロキシなど経由でも転送できる。
 
-Be aware that a hole in the firewall is nothing to be taken lightly. You
-have to make sure you don't give bad people access to the internal
-network; if you're a beginner, it's a lot harder to make software secure
-than you might imagine.
+ファイアウォールの穴は軽く扱うものではない。内部ネットワークに悪意ある人を入れないよう注意が必要だ。初心者にとって、ソフトウェアを安全にするのは想像以上に難しい。
 
-Don't make your sysadmin mad at me. `;-)`
+sysadmin を私のせいで怒らせないで。`;-)`
 
-**[i[Packet sniffer]] [i[Promiscuous mode]] How do I write a packet
-sniffer? How do I put my Ethernet interface into promiscuous mode?**
+**[i[Packet sniffer]] [i[Promiscuous mode]] パケットスニファはどう書く？ Ethernet インターフェースをプロミスキャスモードにするには？**
 
-For those not in the know, when a network card is in "promiscuous mode",
-it will forward ALL packets to the operating system, not just those that
-were addressed to this particular machine. (We're talking Ethernet-layer
-addresses here, not IP addresses--but since ethernet is lower-layer than
-IP, all IP addresses are effectively forwarded as well. See the section
-[Low Level Nonsense and Network Theory](#lowlevel) for more info.)
+知らない人のために言うと、ネットワークカードが「プロミスキャスモード」のとき、この特定のマシン宛てだけでなく _すべて_ のパケットを OS に転送する。（ここで言うのは Ethernet 層のアドレスで、IP アドレスではない——ただし Ethernet は IP より下の層なので、実質的にすべての IP アドレスも転送される。詳細は [低レベルの話とネットワーク理論](#lowlevel) の節を参照。）
 
-This is the basis for how a packet sniffer works. It puts the interface
-into promiscuous mode, then the OS gets every single packet that goes by
-on the wire.  You'll have a socket of some type that you can read this
-data from.
+これがパケットスニファの仕組みの基礎だ。インターフェースをプロミスキャスモードにすると、OS はケーブル上を流れるすべてのパケットを受け取る。そこからデータを読み取れる、何らかのタイプのソケットを持つことになる。
 
-Unfortunately, the answer to the question varies depending on the
-platform, but if you Google for, for instance, "windows promiscuous
-[i[`ioctl()` function]] ioctl" you'll probably get somewhere.  For
-Linux, there's what looks like a [fl[useful Stack Overflow
-thread|https://stackoverflow.com/questions/21323023/]], as well.
+残念ながら答えはプラットフォームによって異なるが、たとえば「windows promiscuous [i[`ioctl()` function]] ioctl」などで Google すれば、おそらくどこかにたどり着く。Linux には [fl[有用そうな Stack Overflow スレッド|https://stackoverflow.com/questions/21323023/]] もある。
 
-**How can I set a custom [i[Timeout-->setting]] timeout value for a TCP
-or UDP socket?**
+**TCP や UDP ソケットにカスタムの [i[Timeout-->setting]] タイムアウト値を設定するには？**
 
-It depends on your system. You might search the net for [i[`SO_RCVTIMEO`
-macro]] `SO_RCVTIMEO` and [i[`SO_SNDTIMEO` macro]] `SO_SNDTIMEO` (for
-use with [i[`setsockopt()` function]] `setsockopt()`) to see if your
-system supports such functionality.
+システム次第だ。ネット上で [i[`SO_RCVTIMEO` macro]] `SO_RCVTIMEO` と [i[`SO_SNDTIMEO` macro]] `SO_SNDTIMEO`（[i[`setsockopt()` function]] `setsockopt()` 用）を検索し、システムがその機能をサポートしているか確認してほしい。
 
-The Linux man page suggests using `alarm()` or `setitimer()` as a
-substitute.
+Linux の man ページは、代わりに `alarm()` や `setitimer()` を使うことを示唆している。
 
 [[book-pagebreak]]
 
-**How can I tell which ports are available to use? Is there a list of
-"official" port numbers?**
+**どのポートが使えるかはどうやって調べる？「公式」のポート番号リストはある？**
 
-Usually this isn't an issue. If you're writing, say, a web server, then
-it's a good idea to use the well-known port 80 for your software. If
-you're writing just your own specialized server, then choose a port at
-random (but greater than 1023) and give it a try.
+通常は問題にならない。たとえば Web サーバーを書くなら、よく知られたポート 80 を使うのがよい。自分専用の特殊なサーバーなら、ランダム（ただし 1023 より大きい）なポートを選んで試せばよい。
 
-If the port is already in use, you'll get an "Address already in use"
-error when you try to `bind()`. Choose another port. (It's a good idea
-to allow the user of your software to specify an alternate port either
-with a config file or a command line switch.)
+ポートがすでに使われていれば、`bind()` しようとしたときに「Address already in use」エラーになる。別のポートを選ぶ。（設定ファイルかコマンドラインスイッチで代替ポートを指定できるようにするのがよい。）
 
-There is a [fl[list of official port
-numbers|https://www.iana.org/assignments/port-numbers]] maintained by
-the Internet Assigned Numbers Authority (IANA). Just because something
-(over 1023) is in that list doesn't mean you can't use the port. For
-instance, Id Software's DOOM uses the same port as "mdqs", whatever that
-is. All that matters is that no one else _on the same machine_ is using
-that port when you want to use it.
+Internet Assigned Numbers Authority（IANA）が [fl[公式ポート番号リスト|https://www.iana.org/assignments/port-numbers]] を維持している。リストに載っている（1023 より大きい）番号だからといって使えないわけではない。たとえば Id Software の DOOM は「mdqs」（何それ？）と同じポートを使っている。重要なのは、使いたいときに _同じマシン上_ で他の誰もそのポートを使っていないことだけだ。

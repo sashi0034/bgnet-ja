@@ -5,6 +5,7 @@
 # Build products
 
 stage/
+_site/
 src/bgnet.html
 src/bgnet.epub
 src/bgnet-wide.html

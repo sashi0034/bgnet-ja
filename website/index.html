@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="ja">
 <head>
-<title>Beej's Guide to Network Programming</title>
+<title>Beej's Guide to Network Programming（日本語版）</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="Description" content="Beej's Guide to Network Programming">
-    <meta name="Keywords" content="network programming sockets">
-    <link rel="icon" type="image/gif" href="/guide/favicon.gif"/>
+    <meta name="Description" content="Beej's Guide to Network Programming 日本語版 — インターネットソケットによるネットワークプログラミング入門">
+    <meta name="Keywords" content="ネットワークプログラミング ソケット sockets Beej">
     <link rel="stylesheet" type="text/css" href="index.css"/>
 </head>
 
@@ -15,160 +14,64 @@
 
 <div class="center">
 	<div class="ib800">
-		<div class="center">
-			<div class="hr w100p"></div>
-			<div id="suggestive-sell">Like the guide? Pitch in!</div>
-			<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-			<input type="hidden" name="cmd" value="_s-xclick">
-			<input type="image" src="https://www.paypal.com/en_US/i/btn/x-click-but04.gif" border="0" name="submit" alt="Make payments with PayPal - it's fast, free and secure!">
-			<input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----">
-			</form>
-			<div class="hr w100p"></div>
-		</div>
-
-		<p>
-
-		<div class="center">
-			<div class="w100p ilb">
-				<div class="float-left mb2ex">
-					<a target="_blank" href="http://beej.us/guide/url/bgbuy">
-						<img border="0" src="bgnetcover.png" alt="book cover image"/>
-					</a>
-				</div>
-
-				<div style="margin-top: 4ex;">
-					<a target="_blank" href="http://beej.us/guide/url/bgbuy">
-						<b><span class="bigfont">Buy the Guide as a Real Life
-						Perfect-Bound BOOK right now!</span></b>
-						<p>
-						<b><i>Holy Moly!</i></b>
-					</a>
-				</div>
-
-				<div class="clear-both"></div>
-
-			</div>
-		</div>
-
-
 		<div class="left">
 			<h1 class="maintitle">Beej's Guide to Network Programming</h1>
-			<h2 class="subtitle">Using Internet Sockets</h2>
+			<h2 class="subtitle">インターネットソケットを使おう（日本語版）</h2>
 
 			<p>
-			(<a href="http://beej.us/guide/">Click here for other guides!</a>)
-
-
-			<p>
-			(<a href="http://beej.us/guide/bgc/">Notably, this is a WIP
-			guide to general C Programming right here!</a>)
+			原文: <a href="https://beej.us/guide/bgnet/">https://beej.us/guide/bgnet/</a>
+			（著者: Brian “Beej Jorgensen” Hall）
 
 			<p>
-			Hello, one and all!  This is my little how-to guide on network
-			programming using Internet sockets, or "sockets programming", for
-			those of you who prefer it.  The sockets API, though started by the
-			Berkeley folk, has been ported to many many platforms, including Unix,
-			Linux, and even Windows.
+			これはインターネットソケット（いわゆる「ソケットプログラミング」）を使った
+			ネットワークプログラミングの入門ガイドです。ソケット API は Berkeley 発祥ですが、
+			Unix・Linux・Windows など多くのプラットフォームに移植されています。
 
 			<p>
-			Unfortunately, it can be a little, um, "much" to digest the API, but as
-			long as you know some <a href="http://beej.us/guide/bgc/">C</a> or C++,
-			this guide should springboard you into the realm of network programming
-			with hopefully as little hassle as humanly possible!
+			API はやや取っつきにくい面もありますが、<a href="https://beej.us/guide/bgc/">C</a>
+			または C++ の基礎があれば、できるだけ手間をかけずにネットワークプログラミングの世界へ
+			飛び込めるはずです。
 
 			<p>
+			このサイトは非公式の日本語訳です。内容の正確さには努めていますが、
+			公式版は上記の原文サイトを参照してください。
 
-			<h3 class="secttitle">What's Here for Readers:</h3>
-			<p><a href="errata.html">Errata</a> (mistakes?  What?)</p>
-
-<!--
-            Search the HTML guide: <span class="small">[<a
-            href="whynoddg.html">Why I don't use Bing (or
-            DuckDuckGo)</a>]</span>
-
-            <script async src="https://cse.google.com/cse.js?cx=ae3393718e443f40f">
-            </script>
-            <div class="gcse-search"></div>
--->
-
-			<b class="subsecttitle">HTML:</b>
-			<ul>
-			<li><a href="html/split/">HTML</a>
-			<li><a href="html/split-wide/">HTML, widescreen</a>
-			<p>
-			<li><a href="html/">HTML, single page</a>
-			<li><a href="html/index-wide.html">HTML, single page, widescreen</a>
-			<p>
-			<li><a href="html/bgnet.zip">HTML ZIP</a>
-			<li><a href="html/bgnet-wide.zip">HTML ZIP, widescreen</a>
-			</ul>
-			<p>
-
-			<b class="subsecttitle">PDF:</b>
-			<ul>
-			<li><a href="pdf/bgnet_usl_c_1.pdf">US Letter, one sided, syntax highlighting</a></li>
-			<li><a href="pdf/bgnet_usl_c_2.pdf">US Letter, two sided, syntax highlighting</a></li>
-			<li><a href="pdf/bgnet_a4_c_1.pdf">A4, one sided, syntax highlighting</a></li>
-			<li><a href="pdf/bgnet_a4_c_2.pdf">A4, two sided, syntax highlighting</a></li>
-			<li><a href="pdf/bgnet_usl_bw_1.pdf">US Letter, one sided, black and white</a></li>
-			<li><a href="pdf/bgnet_usl_bw_2.pdf">US Letter, two sided, black and white</a></li>
-			<li><a href="pdf/bgnet_a4_bw_1.pdf">A4, one sided, black and white</a></li>
-			<li><a href="pdf/bgnet_a4_bw_2.pdf">A4, two sided, black and white</a></li>
-			</ul>
-
-			<b class="subsecttitle">Examples:</b>
-			<p>
-			<ul>
-			<li><a href="source/examples/">Loose downloads</a>	<i>(Run <tt>make</tt> to build.)</i>
-			<li><a href="source/bgnet_source.zip">ZIP file</a>
-			</ul>
-			<p>
-
-
-			<h3 class="secttitle">Mirrors:</h3>
-			<i>Let me know if you have mirrored the site.</i>
-
-			<p>
-			<ul>
-			<li><a href="http://docs.hfbk.net/beej.us/">kfbk.net</a> (Germany)
-			<li><a href="http://www.rainydayz.org/content/beejs-guides">rainydayz.org</a> (Great Britain)
-			</ul>
-
-			<p>
-
-			<h3 class="secttitle">Translations!</h3>
-			<i>Let me know if you have made a translation that I should link to.</i>
-
-			<p>
+			<h3 class="secttitle">ガイドを読む</h3>
 
 			<ul>
-			<li><a href="http://beej-zhcn.netdpi.net">Simplified Chinese</a>
-			<li><a href="http://beej-zhtw.netdpi.net">Traditional Chinese</a>
-			<li><a href="http://www.chez.com/vidalc/lf/socket.html">French</a>
-			<li><a href="http://linguaggioc.altervista.org/GuidaBeej_it.php">Italian</a>
-			<li><a href="https://clipart-library.com/Socket_Programming-KLDP.html">Korean</a>
-            <li><a href="https://garrettjavalia.github.io/posts/2023-06-26-beejs-guide-to-network-programming/">Korean</a>
-			<li>Brazilian Portuguese <a href="translations/bgnet_ptbr.html">HTML</a> <a href="translations/bgnet_ptbr.pdf">PDF</a> <a href="translations/bgnet_ptbr_old.html">older</a>
-			<li><a href="http://www.asawicki.info/Mirror/Beej_s%20Guide%20to%20Network%20Programming%20PL/bgnet.pdf">Polish</a>
-			<li><a href="translations/bgnet_A4_rus.pdf">Russian</a>
-			<li><a href="https://srpsko-hrvatski.com/beej/">Serbian</a>
-			<li><a href="https://stefanogassmann.github.io/BGNETSpanish/">Spanish (Rolling Release)</a>
-
+			<li><a href="html/split/"><b>分割 HTML（おすすめ）</b></a>
+			<li><a href="html/split-wide/">分割 HTML（ワイド）</a>
+			<p>
+			<li><a href="html/">1ページ HTML</a>
+			<li><a href="html/index-wide.html">1ページ HTML（ワイド）</a>
 			</ul>
 
+			<h3 class="secttitle">サンプルコード</h3>
+			<ul>
+			<li><a href="source/examples/">サンプル一覧</a>（ビルドは <tt>make</tt>）
+			</ul>
+
+			<h3 class="secttitle">原文・書籍・PDF</h3>
 			<p>
+			PDF・製本版・他言語訳は原文サイトにあります:
+			<a href="https://beej.us/guide/bgnet/">beej.us/guide/bgnet</a>
 
-			<h3 class="secttitle">What's Here for Translators and Writers:</h3>
+			<h3 class="secttitle">ソース・翻訳について</h3>
+			<p>
+			この日本語版のソースは
+			<a href="https://github.com/sashi0034/bgnet-ja">GitHub (sashi0034/bgnet-ja)</a>
+			にあります。原文ソースは
+			<a href="https://github.com/beejjorgensen/bgnet">beejjorgensen/bgnet</a>
+			です。
 
-			<p>Clone the whole thing from <a
-			href="https://github.com/beejjorgensen/bgnet">GitHub</a> and follow the
-			<tt>README</tt>.
+			<p>
+			ライセンスは Creative Commons Attribution-NonCommercial-NoDerivatives 3.0
+			（翻訳はライセンス上許可されています）。
 
 			<hr class="singleline">
-			Contact Beej: <tt class="email"><a href="mailto:beej@beej.us">beej@beej.us</a></tt>
+			原文著者への連絡: <tt class="email"><a href="mailto:beej@beej.us">beej@beej.us</a></tt>
 		</div>
 	</div>
 </div>
 
 </html>
-

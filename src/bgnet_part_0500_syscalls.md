@@ -1,49 +1,23 @@
-# System Calls or Bust
+# システムコール、本番
 
-This is the section where we get into the system calls (and other
-library calls) that allow you to access the network functionality of a
-Unix box, or any box that supports the sockets API for that matter (BSD,
-Windows, Linux, Mac, what-have-you.) When you call one of these
-functions, the kernel takes over and does all the work for you
-automagically.
+ここからは、Unix マシン（あるいは BSD、Windows、Linux、Mac など、ソケット API をサポートするマシンなら何でも）のネットワーク機能にアクセスするためのシステムコール（およびその他のライブラリコール）の話をする。これらの関数のどれかを呼ぶと、カーネルが引き受けて、魔法のように全部やってくれる。
 
-The place most people get stuck around here is what order to call these
-things in. In that, the `man` pages are no use, as you've probably
-discovered. Well, to help with that dreadful situation, I've tried to
-lay out the system calls in the following sections in _exactly_
-(approximately) the same order that you'll need to call them in your
-programs.
+多くの人がここでつまずくのは、これらをどんな順番で呼べばいいか、という点だ。`man` ページは（おそらく気づいただろう）その点では役に立たない。そんな悲惨な状況を少しでも助けるため、以下のセクションでは、プログラムで呼ぶ順番と（だいたい）同じ順番でシステムコールを並べた。
 
-That, coupled with a few pieces of sample code here and there, some milk
-and cookies (which I fear you will have to supply yourself), and some
-raw guts and courage, and you'll be beaming data around the Internet
-like the Son of Jon Postel!
+それに、あちこちに散らばったサンプルコード、ミルクとクッキー（残念ながら自分で用意してもらう）、そして生の根性と勇気があれば、ジョン・ポステルの息子のようにインターネット上をデータを飛ばせるようになる！
 
-_(Please note that for brevity, many code snippets below do not include
-necessary error checking. And they very commonly assume that the result
-from calls to `getaddrinfo()` succeed and return a valid entry in the
-linked list. Both of these situations are properly addressed in the
-stand-alone programs, though, so use those as a model.)_
+_（簡潔にするため、以下の多くのコード片には必要なエラーチェックを含めていない。また、`getaddrinfo()` の呼び出しが成功してリンクリストに有効なエントリを返すと、よく暗黙に仮定している。どちらも独立したプログラムではきちんと扱っているので、そちらを手本にしてほしい。）_
 
 
-## `getaddrinfo()`---Prepare to launch!
+## `getaddrinfo()`——発射準備！
 
-[i[`getaddrinfo()` function]] This is a real workhorse of a function
-with a lot of options, but usage is actually pretty simple. It helps set
-up the `struct`s you need later on.
+[i[`getaddrinfo()` function]] オプションがたくさんある実働的な関数だが、使い方自体はかなりシンプルだ。後で必要になる `struct` のセットアップを手伝ってくれる。
 
-A tiny bit of history: it used to be that you would use a function
-called `gethostbyname()` to do DNS lookups. Then you'd load that
-information by hand into a `struct sockaddr_in`, and use that in your
-calls.
+少し歴史：`gethostbyname()` で DNS ルックアップをしていた時代があった。得た情報を手で `struct sockaddr_in` に詰め、それを各種呼び出しに使っていた。
 
-This is no longer necessary, thankfully. (Nor is it desirable, if you
-want to write code that works for both IPv4 and IPv6!)  In these modern
-times, you now have the function `getaddrinfo()` that does all kinds of
-good stuff for you, including DNS and service name lookups, and fills
-out the `struct`s you need, besides!
+今はそんな必要はない、ありがたいことに。（IPv4 と IPv6 の両方で動くコードを書きたいなら、望ましくもない！）現代では `getaddrinfo()` があり、DNS やサービス名のルックアップに加え、必要な `struct` まで埋めてくれる。
 
-Let's take a look!
+見てみよう！
 
 ```{.c}
 #include <sys/types.h>
@@ -56,24 +30,16 @@ int getaddrinfo(const char *node,   // e.g. "www.example.com" or IP
                 struct addrinfo **res);
 ```
 
-You give this function three input parameters, and it gives you a
-pointer to a linked-list, `res`, of results.
+この関数には 3 つの入力パラメータを渡し、結果のリンクリスト `res` へのポインタが返る。
 
-The `node` parameter is the host name to connect to, or an IP address.
+`node` パラメータは接続先のホスト名、または IP アドレスだ。
 
-Next is the parameter `service`, which can be a port number, like "80",
-or the name of a particular service (found in [fl[The IANA Port
-List|https://www.iana.org/assignments/port-numbers]] or the
-`/etc/services` file on your Unix machine) like "http" or "ftp" or
-"telnet" or "smtp" or whatever.
+次が `service` パラメータで、ポート番号（"80" など）か、特定サービスの名前（[fl[The IANA Port
+List|https://www.iana.org/assignments/port-numbers]] や Unix マシンの `/etc/services` にある "http"、"ftp"、"telnet"、"smtp" など）を指定できる。
 
-Finally, the `hints` parameter points to a `struct addrinfo` that you've
-already filled out with relevant information.
+最後に `hints` パラメータは、関連情報をすでに埋めた `struct addrinfo` を指す。
 
-Here's a sample call if you're a server who wants to listen on your
-host's IP address, port 3490. Note that this doesn't actually do any
-listening or network setup; it merely sets up structures we'll use
-later:
+サーバー側で、ホストの IP アドレスの 3490 番ポートで待ち受けたい場合のサンプル呼び出しだ。実際に listen したりネットワークをセットアップするわけではなく、後で使う構造体を用意するだけであることに注意：
 
 ```{.c .numberLines}
 int status;
@@ -98,29 +64,15 @@ if ((status = getaddrinfo(NULL, "3490", &hints, &servinfo)) != 0) {
 freeaddrinfo(servinfo); // free the linked-list
 ```
 
-Notice that I set the `ai_family` to `AF_UNSPEC`, thereby saying that I
-don't care if we use IPv4 or IPv6. You can set it to `AF_INET` or
-`AF_INET6` if you want one or the other specifically.
+`ai_family` を `AF_UNSPEC` にしているのは、IPv4 でも IPv6 でもどちらでもいい、という意味だ。どちらか一方に限定したいなら `AF_INET` か `AF_INET6` に設定できる。
 
-Also, you'll see the `AI_PASSIVE` flag in there; this tells
-`getaddrinfo()` to assign the address of my local host to the socket
-structures. This is nice because then you don't have to hardcode it. (Or
-you can put a specific address in as the first parameter to
-`getaddrinfo()` where I currently have `NULL`, up there.)
+`AI_PASSIVE` フラグも入っている。これは `getaddrinfo()` にローカルホストのアドレスをソケット構造体に入れさせる。ハードコードしなくて済むので便利だ。（今 `NULL` にしている `getaddrinfo()` の第 1 引数に特定のアドレスを渡してもいい。）
 
-Then we make the call. If there's an error (`getaddrinfo()` returns
-non-zero), we can print it out using the function `gai_strerror()`, as
-you see. If everything works properly, though, `servinfo` will point to
-a linked list of `struct addrinfo`s, each of which contains a `struct
-sockaddr` of some kind that we can use later! Nifty!
+呼び出す。エラーなら（`getaddrinfo()` が非ゼロを返す）、`gai_strerror()` で表示できる。うまくいけば `servinfo` は `struct addrinfo` のリンクリストを指し、各要素には後で使える何らかの `struct sockaddr` が入っている。便利だ！
 
-Finally, when we're eventually all done with the linked list that
-`getaddrinfo()` so graciously allocated for us, we can (and should) free
-it all up with a call to `freeaddrinfo()`.
+最後に、`getaddrinfo()` が親切にも確保してくれたリンクリストを使い終わったら、`freeaddrinfo()` で（すべきだし）解放する。
 
-Here's a sample call if you're a client who wants to connect to a
-particular server, say "www.example.net" port 3490. Again, this doesn't
-actually connect, but it sets up the structures we'll use later:
+クライアント側で "www.example.net" の 3490 番ポートなど、特定サーバーに接続したい場合のサンプル呼び出しだ。こちらも実際には接続せず、後で使う構造体をセットアップするだけ：
 
 ```{.c .numberLines}
 int status;
@@ -140,10 +92,7 @@ status = getaddrinfo("www.example.net", "3490", &hints, &servinfo);
 // etc.
 ```
 
-I keep saying that `servinfo` is a linked list with all kinds of address
-information. Let's write a quick demo program to show off this
-information. [flx[This short program|showip.c]] will print the IP
-addresses for whatever host you specify on the command line:
+`servinfo` はあらゆる種類のアドレス情報を持つリンクリストだと何度も言っている。デモプログラムでその情報を表示してみよう。[flx[この短いプログラム|showip.c]] は、コマンドラインで指定したホストの IP アドレスを表示する：
 
 ```{.c .numberLines}
 /*
@@ -211,15 +160,11 @@ int main(int argc, char *argv[])
 }
 ```
 
-As you see, the code calls `getaddrinfo()` on whatever you pass on the
-command line, that fills out the linked list pointed to by `res`, and
-then we can iterate over the list and print stuff out or do whatever.
+ご覧のとおり、コマンドライン引数で `getaddrinfo()` を呼び、`res` のリンクリストを埋め、リストを走査して表示したり何でもできる。
 
-(There's a little bit of ugliness there where we have to dig into the
-different types of `struct sockaddr`s depending on the IP version. Sorry
-about that! I'm not sure of a better way around it.)
+（IP バージョンによって `struct sockaddr` の型が違うので、そこを掘り下げる少し醜い部分がある。すまない！もっと良い方法があるかはわからない。）
 
-Sample run! Everyone loves screenshots:
+実行例！みんなスクリーンショットが好きだろ：
 
 ```
 $ showip www.example.net
@@ -234,15 +179,12 @@ IP addresses for ipv6.example.com:
   IPv6: 2001:db8:8c00:22::171
 ```
 
-Now that we have that under control, we'll use the results we get from
-`getaddrinfo()` to pass to other socket functions and, at long last, get
-our network connection established! Keep reading!
+これが片付いたら、`getaddrinfo()` の結果を他のソケット関数に渡し、ついにネットワーク接続を確立する！読み進めてくれ！
 
 
-## `socket()`---Get the File Descriptor! {#socket}
+## `socket()`——ファイルディスクリプタを手に入れろ！ {#socket}
 
-I guess I can put it off no longer---I have to talk about the
-[i[`socket()` function]] `socket()` system call. Here's the breakdown:
+もう先延ばしできない——[i[`socket()` function]] `socket()` システムコールの話をしなければならない。概要はこうだ：
 
 ```{.c}
 #include <sys/types.h>
@@ -251,31 +193,14 @@ I guess I can put it off no longer---I have to talk about the
 int socket(int domain, int type, int protocol); 
 ```
 
-But what are these arguments? They allow you to say what kind of socket
-you want (IPv4 or IPv6, stream or datagram, and TCP or UDP).
+引数は何を意味する？ どんなソケットが欲しいか（IPv4 か IPv6、ストリームかデータグラム、TCP か UDP）を指定できる。
 
-It used to be people would hardcode these values, and you can absolutely
-still do that. (`domain` is `PF_INET` or `PF_INET6`, `type` is
-`SOCK_STREAM` or `SOCK_DGRAM`, and `protocol` can be set to `0` to
-choose the proper protocol for the given `type`. Or you can call
-`getprotobyname()` to look up the protocol you want, "tcp" or "udp".)
+昔はこれらの値をハードコードしていた。今でも全然できる。（`domain` は `PF_INET` か `PF_INET6`、`type` は `SOCK_STREAM` か `SOCK_DGRAM`、`protocol` は `0` にして与えられた `type` に適したプロトコルを選ばせる。または `getprotobyname()` で "tcp" や "udp" を調べる。）
 
-(This `PF_INET` thing is a close relative of the [i[`AF_INET` macro]]
-`AF_INET` that you can use when initializing the `sin_family` field in
-your `struct sockaddr_in`. In fact, they're so closely related that they
-actually have the same value, and many programmers will call `socket()`
-and pass `AF_INET` as the first argument instead of `PF_INET`. Now, get
-some milk and cookies, because it's time for a story. Once upon a time,
-a long time ago, it was thought that maybe an address family (what the
-"AF" in "`AF_INET`" stands for) might support several protocols that
-were referred to by their protocol family (what the "PF" in "`PF_INET`"
-stands for). That didn't happen. And they all lived happily ever after,
-The End. So the most correct thing to do is to use `AF_INET` in your
-`struct sockaddr_in` and `PF_INET` in your call to `socket()`.)
+（この `PF_INET` は、`struct sockaddr_in` の `sin_family` を初期化するときに使う [i[`AF_INET` macro]]
+`AF_INET` の近い親戚だ。実際、値は同じで、多くのプログラマは `socket()` に第 1 引数として `PF_INET` ではなく `AF_INET` を渡す。さて、ミルクとクッキーの時間だ——昔話をしよう。ずっと昔、アドレスファミリー（"`AF_INET`" の "AF" が指すもの）が、プロトコルファミリー（"`PF_INET`" の "PF"）で呼ばれる複数のプロトコルをサポートするかも、と考えられていた。そうはならなかった。みんな幸せに暮らした、おしまい。だから正しいのは `struct sockaddr_in` では `AF_INET`、`socket()` の呼び出しでは `PF_INET` を使うことだ。）
 
-Anyway, enough of that. What you really want to do is use the values
-from the results of the call to `getaddrinfo()`, and feed them into
-`socket()` directly like this:
+とにかく、本当にやりたいのは `getaddrinfo()` の結果から得た値を `socket()` にそのまま渡すことだ：
 
 ```{.c .numberLines}
 int s;
@@ -293,30 +218,16 @@ getaddrinfo("www.example.com", "http", &hints, &res);
 s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 ```
 
-`socket()` simply returns to you a _socket descriptor_ that you can use
-in later system calls, or `-1` on error. The global variable `errno` is
-set to the error's value (see the [`errno`](#errnoman) man page for more
-details, and a quick note on using `errno` in multithreaded programs).
+`socket()` は後続のシステムコールで使う _ソケットディスクリプタ_ を返す。エラーなら `-1`。グローバル変数 `errno` にエラー値がセットされる（詳細は [`errno`](#errnoman) の man ページ、マルチスレッドでの `errno` についての短い注も参照）。
 
-Fine, fine, fine, but what good is this socket? The answer is that it's
-really no good by itself, and you need to read on and make more system
-calls for it to make any sense.
+いい、いい、いい——でもこのソケット単体では何の役にも立たない。読み進めてさらにシステムコールを呼ばないと意味がない。
 
 
-## `bind()`---What port am I on? {#bind}
+## `bind()`——俺は何番ポート？ {#bind}
 
-[i[`bind()` function]] Once you have a socket, you might have to
-associate that socket with a [i[Port]] port on your local machine. (This
-is commonly done if you're going to [i[`listen()` function]] `listen()`
-for incoming connections on a specific port---multiplayer network games
-do this when they tell you to "connect to 192.168.5.10 port 3490".) The
-port number is used by the kernel to match an incoming packet to a
-certain process's socket descriptor. If you're going to only be doing a
-[i[`connect()`] function] `connect()` (because you're the client, not
-the server), this is probably unnecessary. Read it anyway, just for
-kicks.
+[i[`bind()` function]] ソケットを手に入れたら、ローカルマシンの [i[Port]] ポートにそのソケットを関連付ける必要がある。（特定ポートで [i[`listen()` function]] `listen()` して着信接続を待つときによくやる——マルチプレイのネットワークゲームが「192.168.5.10 の 3490 番に接続して」と言うのと同じ。）ポート番号は、カーネルが着信パケットを特定プロセスのソケットディスクリプタに対応付けるために使う。クライアントとして [i[`connect()`] function] `connect()` だけするなら、たぶん不要だ。とにかく読んでおけ——暇つぶしに。
 
-Here is the synopsis for the `bind()` system call:
+`bind()` システムコールの概要：
 
 ```{.c}
 #include <sys/types.h>
@@ -325,13 +236,9 @@ Here is the synopsis for the `bind()` system call:
 int bind(int sockfd, struct sockaddr *my_addr, int addrlen);
 ```
 
-`sockfd` is the socket file descriptor returned by `socket()`. `my_addr`
-is a pointer to a `struct sockaddr` that contains information about your
-address, namely, port and [i[IP address]] IP address. `addrlen` is the
-length in bytes of that address.
+`sockfd` は `socket()` が返したソケットファイルディスクリプタ。`my_addr` はアドレス情報、つまりポートと [i[IP address]] IP アドレスを含む `struct sockaddr` へのポインタ。`addrlen` はそのアドレスのバイト長。
 
-Whew. That's a bit to absorb in one chunk. Let's have an example that
-binds the socket to the host the program is running on, port 3490:
+ふう。一気に飲み込むには多い。プログラムが動いているホストの 3490 番ポートにソケットを bind する例：
 
 ```{.c .numberLines}
 struct addrinfo hints, *res;
@@ -355,19 +262,11 @@ sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 bind(sockfd, res->ai_addr, res->ai_addrlen);
 ```
 
-By using the `AI_PASSIVE` flag, I'm telling the program to bind to the
-IP of the host it's running on. If you want to bind to a specific local
-IP address, drop the `AI_PASSIVE` and put an IP address in for the first
-argument to `getaddrinfo()`.
+`AI_PASSIVE` フラグで、プログラムが動いているホストの IP に bind するよう指示している。特定のローカル IP に bind したいなら `AI_PASSIVE` を外し、`getaddrinfo()` の第 1 引数に IP アドレスを渡す。
 
-`bind()` also returns `-1` on error and sets `errno` to the error's
-value.
+`bind()` もエラーで `-1` を返し `errno` をセットする。
 
-Lots of old code manually packs the `struct sockaddr_in` before calling
-`bind()`. Obviously this is IPv4-specific, but there's really nothing
-stopping you from doing the same thing with IPv6, except that using
-`getaddrinfo()` is going to be easier, generally. Anyway, the old code
-looks something like this:
+古いコードは `bind()` の前に手で `struct sockaddr_in` を詰めていた。IPv4 専用だが、IPv6 でも同じことはできる——ただし一般には `getaddrinfo()` の方が楽だ。古いコードはだいたいこんな感じ：
 
 ```{.c .numberLines}
 // !!! THIS IS THE OLD WAY !!!
@@ -385,25 +284,11 @@ memset(my_addr.sin_zero, '\0', sizeof my_addr.sin_zero);
 bind(sockfd, (struct sockaddr *)&my_addr, sizeof my_addr);
 ```
 
-In the above code, you could also assign `INADDR_ANY` to the `s_addr`
-field if you wanted to bind to your local IP address (like the
-`AI_PASSIVE` flag, above).  The IPv6 version of `INADDR_ANY` is a global
-variable `in6addr_any` that is assigned into the `sin6_addr` field of
-your `struct sockaddr_in6`. (There is also a macro `IN6ADDR_ANY_INIT`
-that you can use in a variable initializer.)
+上のコードでは、上の `AI_PASSIVE` と同様にローカル IP に bind したければ `s_addr` に `INADDR_ANY` を代入してもいい。`INADDR_ANY` の IPv6 版は `struct sockaddr_in6` の `sin6_addr` に代入するグローバル変数 `in6addr_any` だ。（変数初期化子として使えるマクロ `IN6ADDR_ANY_INIT` もある。）
 
-Another thing to watch out for when calling `bind()`: don't go
-underboard with your port numbers. [i[Port]] All ports below 1024 are
-RESERVED (unless you're the superuser)! You can have any port number
-above that, right up to 65535 (provided they aren't already being used
-by another program).
+`bind()` を呼ぶときのもう 1 つの注意：ポート番号を使いすぎないこと。[i[Port]] 1024 未満のポートはすべて予約されている（スーパーユーザーでない限り）！ それより上なら 65535 まで（他のプログラムが使っていなければ）好きな番号が使える。
 
-Sometimes, you might notice, you try to rerun a server and `bind()`
-fails, claiming [i[Address already in use]] "Address already in use."
-What does that mean? Well, a little bit of a socket that was connected
-is still hanging around in the kernel, and it's hogging the port. You
-can either wait for it to clear (a minute or so), or add code to your
-program allowing it to reuse the port, like this:
+ときどき、サーバーを再実行すると `bind()` が失敗し、[i[Address already in use]] "Address already in use." と言うことがある。どういうこと？ 接続されていたソケットの断片がカーネルに残っていて、ポートを占有している。消えるまで待つ（1 分ほど）か、ポートを再利用できるようにコードを足す：
 
 [i[`setsockopt()` function]]
  [i[`SO_REUSEADDR` macro]]
@@ -416,28 +301,16 @@ int yes=1;
 setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes);
 ```
 
-[i[`bind()` function]] One small extra final note about `bind()`: there
-are times when you won't absolutely have to call it. If you are
-[i[`connect()` function]] `connect()`ing to a remote machine and you
-don't care what your local port is (as is the case with `telnet` where
-you only care about the remote port), you can simply call `connect()`,
-it'll check to see if the socket is unbound, and will `bind()` it to an
-unused local port if necessary.
+[i[`bind()` function]] `bind()` について、最後にもう 1 点：必ずしも呼ばなくていい場合がある。リモートマシンに [i[`connect()` function]] `connect()` するだけでローカルポートを気にしない場合（リモートポートだけ気にする `telnet` のように）、単に `connect()` を呼べば、ソケットが未 bind なら未使用のローカルポートに `bind()` してくれる。
 
 
-## `connect()`---Hey, you! {#connect}
+## `connect()`——おい、そこの君！ {#connect}
 
-[i[`connect()` function]] Let's just pretend for a few minutes that
-you're a telnet application. Your user commands you (just like in the
-movie [i[TRON]] _TRON_) to get a socket file descriptor. You comply and
-call `socket()`. Next, the user tells you to connect to "`10.12.110.57`"
-on port "`23`" (the standard telnet port). Yow! What do you do now?
+[i[`connect()` function]] 数分だけ telnet アプリケーションのふりをしよう。ユーザー（映画 [i[TRON]] _TRON_ のように）がソケットファイルディスクリプタを取れと命じる。従って `socket()` を呼ぶ。次に "`10.12.110.57`" の "`23`" 番（標準 telnet ポート）に接続しろ、と言われた。どうする？
 
-Lucky for you, program, you're now perusing the section on
-`connect()`---how to connect to a remote host. So read furiously onward!
-No time to lose!
+幸い、`connect()` のセクションを読んでいる——リモートホストへの接続方法だ。猛スピードで読み進めろ！ 時間がない！
 
-The `connect()` call is as follows:
+`connect()` の呼び出しは次のとおり：
 
 ```{.c}
 #include <sys/types.h>
@@ -446,17 +319,11 @@ The `connect()` call is as follows:
 int connect(int sockfd, struct sockaddr *serv_addr, int addrlen); 
 ```
 
-`sockfd` is our friendly neighborhood socket file descriptor, as
-returned by the `socket()` call, `serv_addr` is a `struct sockaddr`
-containing the destination port and IP address, and `addrlen` is the
-length in bytes of the server address structure.
+`sockfd` は `socket()` が返したソケットファイルディスクリプタ。`serv_addr` は宛先ポートと IP アドレスを含む `struct sockaddr`。`addrlen` はサーバーアドレス構造体のバイト長。
 
-All of this information can be gleaned from the results of the
-`getaddrinfo()` call, which rocks.
+この情報はすべて `getaddrinfo()` の結果から取れる。最高だ。
 
-Is this starting to make more sense? I can't hear you from here, so I'll
-just have to hope that it is. Let's have an example where we make a
-socket connection to "`www.example.com`", port `3490`:
+だんだんわかってきたか？ ここからは聞こえないので、そうだと信じるしかない。例として "`www.example.com`" の `3490` 番ポートへのソケット接続：
 
 ```{.c .numberLines}
 struct addrinfo hints, *res;
@@ -479,50 +346,31 @@ sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 connect(sockfd, res->ai_addr, res->ai_addrlen);
 ```
 
-Again, old-school programs filled out their own `struct sockaddr_in`s to
-pass to `connect()`. You can do that if you want to. See the similar
-note in the [`bind()` section](#bind), above.
+古いプログラムは `connect()` に渡す `struct sockaddr_in` を自分で詰めていた。やりたければできる。上の [`bind()` セクション](#bind) の同様の注を参照。
 
-Be sure to check the return value from `connect()`---it'll return `-1`
-on error and set the variable `errno`.
+`connect()` の戻り値は必ず確認——エラーなら `-1` で `errno` がセットされる。
 
 [i[`bind()` function-->implicit]]
 
-Also, notice that we didn't call `bind()`. Basically, we don't care
-about our local port number; we only care where we're going (the remote
-port). The kernel will choose a local port for us, and the site we
-connect to will automatically get this information from us. No worries.
+`bind()` は呼んでいないことにも注意。基本的にローカルポートは気にせず、行き先（リモートポート）だけ気にする。カーネルがローカルポートを選び、接続先は自動的にその情報を受け取る。心配無用。
 
 
-## `listen()`---Will somebody please call me? {#listen}
+## `listen()`——誰か電話してくれ！ {#listen}
 
-[i[`listen()` function]] OK, time for a change of pace. What if you
-don't want to connect to a remote host. Say, just for kicks, that you
-want to wait for incoming connections and handle them in some way. The
-process is two step: first you `listen()`, then you [i[`accept()`
-function]] `accept()` (see below).
+[i[`listen()` function]] さて、テンポを変えよう。リモートホストに接続したくないとする。例えば着信接続を待って何か処理したい。手順は 2 段階：まず `listen()`、それから [i[`accept()`
+function]] `accept()`（下参照）。
 
-The `listen()` call is fairly simple, but requires a bit of explanation:
+`listen()` の呼び出しは比較的シンプルだが、少し説明が要る：
 
 ```{.c}
 int listen(int sockfd, int backlog); 
 ```
 
-`sockfd` is the usual socket file descriptor from the `socket()` system
-call.  [i[`listen()` function-->backlog]] `backlog` is the number of
-connections allowed on the incoming queue. What does that mean? Well,
-incoming connections are going to wait in this queue until you
-`accept()` them (see below) and this is the limit on how many can queue
-up. Most systems silently limit this number to about 20; you can
-probably get away with setting it to `5` or `10`.
+`sockfd` は `socket()` システムコールの通常のソケットファイルディスクリプタ。[i[`listen()` function-->backlog]] `backlog` は着信キューに載せられる接続数の上限。どういう意味？ 着信接続は `accept()` するまで（下参照）このキューで待ち、この数が上限だ。多くのシステムは黙って 20 前後に制限する。`5` か `10` にしておけばだいたい大丈夫。
 
-Again, as per usual, `listen()` returns `-1` and sets `errno` on error.
+いつものように `listen()` はエラーで `-1`、`errno` をセットする。
 
-Well, as you can probably imagine, we need to call `bind()` before we
-call `listen()` so that the server is running on a specific port. (You
-have to be able to tell your buddies which port to connect to!)  So if
-you're going to be listening for incoming connections, the sequence of
-system calls you'll make is:
+想像のとおり、`listen()` の前に `bind()` が必要で、サーバーが特定ポートで動いている必要がある。（仲間にどのポートに接続すればいいか教えられないと！） 着信を待つなら、システムコールの順序は：
 
 ```{.c .numberLines}
 getaddrinfo();
@@ -532,26 +380,14 @@ listen();
 /* accept() goes here */ 
 ```
 
-I'll just leave that in the place of sample code, since it's fairly
-self-explanatory. (The code in the `accept()` section, below, is more
-complete.) The really tricky part of this whole sha-bang is the call to
-`accept()`.
+サンプルコードの代わりにこれだけ置いておく——だいたい自明だから。（下の `accept()` セクションのコードの方が完全だ。）本当にトリッキーなのは `accept()` の呼び出しだ。
 
 
-## `accept()`---"Thank you for calling port 3490."
+## `accept()`——「3490 番端口にお電話ありがとうございます」
 
-[i[`accept()` function]] Get ready---the `accept()` call is kinda weird!
-What's going to happen is this: someone far far away will try to
-`connect()` to your machine on a port that you are `listen()`ing on.
-Their connection will be queued up waiting to be `accept()`ed. You call
-`accept()` and you tell it to get the pending connection. It'll return
-to you a _brand new socket file descriptor_ to use for this single
-connection! That's right, suddenly you have _two socket file
-descriptors_ for the price of one! The original one is still listening
-for more new connections, and the newly created one is finally ready to
-`send()` and `recv()`. We're there! 
+[i[`accept()` function]] 覚悟して——`accept()` の呼び出しはちょっと変だ！ こうなる：遠くの誰かが、あなたが `listen()` しているポートに `connect()` する。接続は `accept()` されるまでキューに並ぶ。`accept()` を呼んで保留中の接続を取る。_この 1 接続専用の、真新しいソケットファイルディスクリプタ_ が返る！ そう、いきなり _ソケットファイルディスクリプタが 2 つ_ 手に入る！ 元の方は引き続き新しい接続を待ち、新しく作られた方がついに `send()` と `recv()` の準備が整う。到達だ！
 
-The call is as follows:
+呼び出しは次のとおり：
 
 ```{.c}
 #include <sys/types.h>
@@ -560,20 +396,12 @@ The call is as follows:
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen); 
 ```
 
-`sockfd` is the `listen()`ing socket descriptor. Easy enough. `addr`
-will usually be a pointer to a local `struct sockaddr_storage`. This is
-where the information about the incoming connection will go (and with it
-you can determine which host is calling you from which port). `addrlen`
-is a local integer variable that should be set to `sizeof(struct
-sockaddr_storage)` before its address is passed to `accept()`.
-`accept()` will not put more than that many bytes into `addr`. If it
-puts fewer in, it'll change the value of `addrlen` to reflect that.
+`sockfd` は `listen()` 中のソケットディスクリプタ。簡単だ。`addr` は通常ローカルの `struct sockaddr_storage` へのポインタ。着信接続の情報が入り（どのホストのどのポートからかわかる）。`addrlen` は `accept()` に渡す前に `sizeof(struct sockaddr_storage)` にセットしておくローカル整数。`addr` に入れるバイト数はそれ以上にならない。少なければ `addrlen` の値を書き換える。
 
-Guess what? `accept()` returns `-1` and sets `errno` if an error occurs.
-Betcha didn't figure that.
+当たり前だが、エラーなら `accept()` は `-1` で `errno` をセットする。
+当ててみろ。
 
-Like before, this is a bunch to absorb in one chunk, so here's a sample
-code fragment for your perusal:
+前と同様、一気に多いのでサンプル断片：
 
 ```{.c .numberLines}
 #include <string.h>
@@ -621,43 +449,25 @@ int main(void)
     .
 ```
 
-Again, note that we will use the socket descriptor `new_fd` for all
-`send()` and `recv()` calls. If you're only getting one single
-connection ever, you can `close()` the listening `sockfd` in order to
-prevent more incoming connections on the same port, if you so desire.
+繰り返すが、すべての `send()` と `recv()` にはソケットディスクリプタ `new_fd` を使う。接続が 1 回だけなら、同じポートへの追加着信を防ぐために listen 用の `sockfd` を `close()` してもいい。
 
 
-## `send()` and `recv()`---Talk to me, baby! {#sendrecv}
+## `send()` と `recv()`——話しかけてよ、ベイベー！ {#sendrecv}
 
-These two functions are for communicating over stream sockets or
-connected datagram sockets. If you want to use regular unconnected
-datagram sockets, you'll need to see the section on [`sendto()` and
-`recvfrom()`](#sendtorecv), below.
+この 2 つはストリームソケット、または接続済みデータグラムソケットでの通信用だ。通常の非接続データグラムソケットなら、下の [`sendto()` と
+`recvfrom()`](#sendtorecv) のセクションを見てほしい。
 
-> [i[Blocking]] Here's something that might (or might not) be new to
-> you: these are _blocking_ calls. That is, `recv()` will _block_ until
-> there is some data ready to receive. "But what does 'block' mean,
-> already?!" It means your program is going to stop there, on that
-> system call, until someone sends you something. (The OS techie jargon
-> for "stop" in that sentence is actually _sleep_, so I might use those
-> terms interchangeably.) `send()` can also block if the stuff you're
-> sending is all jammed up somehow, but that's rarer. We'll [revisit
-> this concept later](#blocking), and talk about how to avoid it when
-> you need to.
+> [i[Blocking]] 新しいかもしれない点：これらは _ブロッキング_ 呼び出しだ。`recv()` は受信可能なデータがあるまで _ブロック_ する。「ブロックって何だよ？！」 そのシステムコールのところでプログラムが止まる、という意味だ。誰かが何か送るまで。（OS 技術者の用語では「止まる」は実際 _sleep_ なので、混ぜて使うかもしれない。）`send()` も送るデータが詰まっているとブロックすることがあるが、稀だ。この概念は[後で再訪](#blocking)し、必要なときの回避法も話す。
 
-[i[`send()` function]] Here's the `send()` call:
+[i[`send()` function]] `send()` の呼び出し：
 
 ```{.c}
 int send(int sockfd, const void *msg, int len, int flags); 
 ```
 
-`sockfd` is the socket descriptor you want to send data to (whether it's
-the one returned by `socket()` or the one you got with `accept()`).
-`msg` is a pointer to the data you want to send, and `len` is the length
-of that data in bytes.  Just set `flags` to `0`. (See the `send()` man
-page for more information concerning flags.)
+`sockfd` はデータを送るソケットディスクリプタ（`socket()` が返したものでも `accept()` で得たものでも）。`msg` は送りたいデータへのポインタ、`len` はそのバイト長。`flags` は `0` でいい。（フラグの詳細は `send()` の man ページ参照。）
 
-Some sample code might be:
+サンプルコード：
 
 ```{.c .numberLines}
 char *msg = "Beej was here!";
@@ -672,168 +482,103 @@ bytes_sent = send(sockfd, msg, len, 0);
 . 
 ```
 
-`send()` returns the number of bytes actually sent out---_this might be
-less than the number you told it to send!_  See, sometimes you tell it
-to send a whole gob of data and it just can't handle it. It'll fire off
-as much of the data as it can, and trust you to send the rest later.
-Remember, if the value returned by `send()` doesn't match the value in
-`len`, it's up to you to send the rest of the string. The good news is
-this: if the packet is small (less than 1K or so) it will _probably_
-manage to send the whole thing all in one go.  Again, `-1` is returned
-on error, and `errno` is set to the error number.
+`send()` は実際に送れたバイト数を返す——_指定した数より少ないことがある！_ 大量のデータを送れと言っても処理しきれないことがある。送れる分だけ送り、残りは後で送る前提だ。`send()` の戻り値が `len` と一致しなければ、残りの文字列を送るのは自分の責任だ。良いニュース：パケットが小さければ（1K 前後以下）だいたい一発で全部送れる。エラーなら `-1`、`errno` にエラー番号。
 
-[i[`recv()` function]] The `recv()` call is similar in many respects:
+[i[`recv()` function]] `recv()` は多くの点で似ている：
 
 ```{.c}
 int recv(int sockfd, void *buf, int len, int flags);
 ```
 
-`sockfd` is the socket descriptor to read from, `buf` is the buffer to
-read the information into, `len` is the maximum length of the buffer,
-and `flags` can again be set to `0`. (See the `recv()` man page for flag
-information.)
+`sockfd` は読み取るソケットディスクリプタ、`buf` は読み込み先バッファ、`len` はバッファの最大長、`flags` は再び `0` でよい。（フラグは `recv()` の man ページ参照。）
 
-`recv()` returns the number of bytes actually read into the buffer, or
-`-1` on error (with `errno` set, accordingly).
+`recv()` はバッファに実際に読み込んだバイト数を返す。エラーなら `-1`（`errno` もセット）。
 
-Wait! `recv()` can return `0`. This can mean only one thing: the remote
-side has closed the connection on you! A return value of `0` is
-`recv()`'s way of letting you know this has occurred.
+待て！ `recv()` は `0` を返すことがある。意味は 1 つだけ：向こう側が接続を閉じた！ 戻り値 `0` はその通知だ。
 
-There, that was easy, wasn't it? You can now pass data back and forth on
-stream sockets! Whee! You're a Unix Network Programmer!
+簡単だったろ？ ストリームソケット上でデータを行き来できる！ やった！ Unix ネットワークプログラマーだ！
 
+## `sendto()` と `recvfrom()`——DGRAM 流に話しかけて {#sendtorecv}
 
-## `sendto()` and `recvfrom()`---Talk to me, DGRAM-style {#sendtorecv}
+[i[`SOCK_DGRAM` macro]] 「いいのはわかるが、非接続データグラムソケットはどうなる？」 問題ない、相棒。ちょうどいいものがある。
 
-[i[`SOCK_DGRAM` macro]] "This is all fine and dandy," I hear you saying,
-"but where does this leave me with unconnected datagram sockets?" No
-problemo, amigo. We have just the thing.
-
-Since datagram sockets aren't connected to a remote host, guess which
-piece of information we need to give before we send a packet? That's
-right! The destination address! Here's the scoop:
+データグラムソケットはリモートホストに接続していないので、パケットを送る前に何が必要か？ そう、宛先アドレスだ！ 概要：
 
 ```{.c}
 int sendto(int sockfd, const void *msg, int len, unsigned int flags,
            const struct sockaddr *to, socklen_t tolen); 
 ```
 
-As you can see, this call is basically the same as the call to `send()`
-with the addition of two other pieces of information. `to` is a pointer
-to a `struct sockaddr` (which will probably be another `struct
-sockaddr_in` or `struct sockaddr_in6` or `struct sockaddr_storage` that
-you cast at the last minute) which contains the destination [i[IP
-address]] IP address and [i[Port]] port. `tolen`, an `int` deep-down,
-can simply be set to `sizeof *to` or `sizeof(struct sockaddr_storage)`.
+ご覧のとおり、`send()` とほぼ同じで、情報が 2 つ増えている。`to` は宛先 [i[IP
+address]] IP アドレスと [i[Port]] ポートを含む `struct sockaddr`（たぶん `struct sockaddr_in`、`struct sockaddr_in6`、`struct sockaddr_storage` のどれかを最後にキャスト）へのポインタ。`tolen` は `int` だが、`sizeof *to` か `sizeof(struct sockaddr_storage)` にすればよい。
 
-To get your hands on the destination address structure, you'll probably
-either get it from `getaddrinfo()`, or from `recvfrom()`, below, or
-you'll fill it out by hand.
+宛先アドレス構造体は `getaddrinfo()`、下の `recvfrom()`、または手で詰める。
 
-Just like with `send()`, `sendto()` returns the number of bytes actually
-sent (which, again, might be less than the number of bytes you told it
-to send!), or `-1` on error.
+`send()` と同様、`sendto()` は実際に送ったバイト数（再び指定より少ないことがある）か、エラーで `-1` を返す。
 
-Equally similar are `recv()` and [i[`recvfrom()` function]]
-`recvfrom()`. The synopsis of `recvfrom()` is:
+同様に `recv()` と [i[`recvfrom()` function]]
+`recvfrom()` も似ている。`recvfrom()` の概要：
 
 ```{.c}
 int recvfrom(int sockfd, void *buf, int len, unsigned int flags,
              struct sockaddr *from, int *fromlen); 
 ```
 
-Again, this is just like `recv()` with the addition of a couple fields.
-`from` is a pointer to a local [i[`struct sockaddr` type]] `struct
-sockaddr_storage` that will be filled with the IP address and port of
-the originating machine. `fromlen` is a pointer to a local `int` that
-should be initialized to `sizeof *from` or `sizeof(struct
-sockaddr_storage)`. When the function returns, `fromlen` will contain
-the length of the address actually stored in `from`.
+再び `recv()` にフィールドが 2 つ足された形。`from` は送信元マシンの IP アドレスとポートを埋めるローカルの [i[`struct sockaddr` type]] `struct sockaddr_storage` へのポインタ。`fromlen` は `sizeof *from` か `sizeof(struct sockaddr_storage)` で初期化するローカル `int` へのポインタ。関数が返ると `fromlen` には `from` に実際に格納されたアドレス長が入る。
 
-`recvfrom()` returns the number of bytes received, or `-1` on error
-(with `errno` set accordingly).
+`recvfrom()` は受信バイト数、またはエラーで `-1`（`errno` もセット）を返す。
 
-So, here's a question: why do we use `struct sockaddr_storage` as the
-socket type? Why not `struct sockaddr_in`? Because, you see, we want to
-not tie ourselves down to IPv4 or IPv6. So we use the generic `struct
-sockaddr_storage` which we know will be big enough for either.
+質問：なぜソケット型に `struct sockaddr_storage` を使う？ `struct sockaddr_in` ではないの？ IPv4 か IPv6 かに縛りたくないから。どちらにも十分大きい汎用の `struct sockaddr_storage` を使う。
 
-(So... here's another question: why isn't `struct sockaddr` itself big
-enough for any address? We even cast the general-purpose `struct
-sockaddr_storage` to the general-purpose `struct sockaddr`! Seems
-extraneous and redundant, huh? The answer is, it just isn't big enough,
-and I'd guess that changing it at this point would be Problematic. So
-they made a new one.)
+（では `struct sockaddr` 自体はなぜどんなアドレスにも足りない？ 汎用の `struct sockaddr_storage` を汎用の `struct sockaddr` にキャストしているのに！ 余計で冗長に見えるだろ？ 答えは、単に足りなくて、今さら変えるのは面倒、という推測だ。だから新しい型が作られた。）
 
-Remember, if you [i[`connect()` function-->on datagram sockets]]
-`connect()` a datagram socket, you can then simply use `send()` and
-`recv()` for all your transactions. The socket itself is still a
-datagram socket and the packets still use UDP, but the socket interface
-will automatically add the destination and source information for you.
+[i[`connect()` function-->on datagram sockets]]
+データグラムソケットに `connect()` すれば、その後は単に `send()` と `recv()` だけで取引できる。ソケット自体はデータグラムのままでパケットは UDP だが、ソケットインターフェースが宛先と送信元情報を自動で付けてくれる。
 
 
-## `close()` and `shutdown()`---Get outta my face!
+## `close()` と `shutdown()`——あっち行け！
 
-Whew! You've been `send()`ing and `recv()`ing data all day long, and
-you've had it. You're ready to close the connection on your socket
-descriptor. This is easy. You can just use the regular Unix file
-descriptor [i[`close()` function]] `close()` function:
+ふう！ 一日中 `send()` と `recv()` して、もう限界だ。ソケットディスクリプタの接続を閉じたい。簡単だ。普通の Unix ファイルディスクリプタ用の [i[`close()` function]] `close()` が使える：
 
 ```{.c}
 close(sockfd); 
 ```
 
-This will prevent any more reads and writes to the socket. Anyone
-attempting to read or write the socket on the remote end will receive an
-error.
+ソケットへの読み書きはこれ以上できなくなる。リモート側が読み書きしようとするとエラーになる。
 
-Just in case you want a little more control over how the socket closes,
-you can use the [i[`shutdown()` function]] `shutdown()` function. It
-allows you to cut off communication in a certain direction, or both ways
-(just like `close()` does). Synopsis:
+閉じ方をもう少し制御したいなら [i[`shutdown()` function]] `shutdown()` がある。特定方向だけ、または両方向（`close()` と同様）通信を切れる。概要：
 
 ```{.c}
 int shutdown(int sockfd, int how); 
 ```
 
-`sockfd` is the socket file descriptor you want to shutdown, and `how`
-is one of the following:
+`sockfd` は shutdown したいソケットファイルディスクリプタ。`how` は次のいずれか：
 
-| `how` | Effect                                                     |
+| `how` | 効果                                                     |
 |:-----:|------------------------------------------------------------|
-|  `0`  | Further receives are disallowed                            |
-|  `1`  | Further sends are disallowed                               |
-|  `2`  | Further sends and receives are disallowed (like `close()`) |
+|  `0`  | 以降の受信を禁止                                           |
+|  `1`  | 以降の送信を禁止                                           |
+|  `2`  | 以降の送受信を禁止（`close()` と同様）                     |
 
-`shutdown()` returns `0` on success, and `-1` on error (with `errno` set
-accordingly).
+`shutdown()` は成功で `0`、エラーで `-1`（`errno` もセット）。
 
-If you deign to use `shutdown()` on unconnected datagram sockets, it
-will simply make the socket unavailable for further `send()` and
-`recv()` calls (remember that you can use these if you `connect()` your
-datagram socket).
+非接続データグラムソケットに `shutdown()` を使うと、単にそのソケットでこれ以上 `send()` と `recv()` できなくなる（データグラムソケットを `connect()` していればこれらは使える）。
 
-It's important to note that `shutdown()` doesn't actually close the file
-descriptor---it just changes its usability. To free a socket descriptor,
-you need to use `close()`.
+`shutdown()` はファイルディスクリプタを実際には閉じない——使える状態だけ変える。ソケットディスクリプタを解放するには `close()` が必要だ。
 
-Nothing to it.
+それだけ。
 
-(Except to remember that if you're using [i[Windows]] Windows and
-[i[Winsock]] Winsock that you should call [i[`closesocket()` function]]
-`closesocket()` instead of `close()`.)
+（[i[Windows]] Windows と [i[Winsock]] Winsock を使うなら [i[`closesocket()` function]]
+`closesocket()` を `close()` の代わりに呼ぶことを忘れないで。）
 
 
-## `getpeername()`---Who are you?
+## `getpeername()`——君は誰？
 
-[i[`getpeername()` function]] This function is so easy.
+[i[`getpeername()` function]] この関数はとても簡単だ。
 
-It's so easy, I almost didn't give it its own section. But here it is
-anyway.
+簡単すぎて、独立したセクションにするか迷った。でもここにある。
 
-The function `getpeername()` will tell you who is at the other end of a
-connected stream socket. The synopsis:
+`getpeername()` は接続済みストリームソケットの向こう側が誰か教えてくれる。概要：
 
 ```{.c}
 #include <sys/socket.h>
@@ -841,33 +586,21 @@ connected stream socket. The synopsis:
 int getpeername(int sockfd, struct sockaddr *addr, int *addrlen); 
 ```
 
-`sockfd` is the descriptor of the connected stream socket, `addr` is a
-pointer to a `struct sockaddr` (or a `struct sockaddr_in`) that will
-hold the information about the other side of the connection, and
-`addrlen` is a pointer to an `int`, that should be initialized to
-`sizeof *addr` or `sizeof(struct sockaddr)`.
+`sockfd` は接続済みストリームソケットのディスクリプタ。`addr` は接続の向こう側の情報を入れる `struct sockaddr`（または `struct sockaddr_in`）へのポインタ。`addrlen` は `sizeof *addr` か `sizeof(struct sockaddr)` で初期化する `int` へのポインタ。
 
-The function returns `-1` on error and sets `errno` accordingly.
+エラーなら `-1`、`errno` をセット。
 
-Once you have their address, you can use [i[`inet_ntop()` function]]
-`inet_ntop()`, [i[`getnameinfo()` function]] `getnameinfo()`, or
-[i[`gethostbyaddr()` function]] `gethostbyaddr()` to print or get more
-information. No, you can't get their login name. (Ok, ok. If the other
-computer is running an ident daemon, this is possible. This, however, is
-beyond the scope of this document. Check out [flrfc[RFC 1413|1413]] for
-more info.)
+アドレスがわかれば [i[`inet_ntop()` function]]
+`inet_ntop()`、[i[`getnameinfo()` function]] `getnameinfo()`、または
+[i[`gethostbyaddr()` function]] `gethostbyaddr()` で表示や追加情報取得ができる。ログイン名は取れない。（向こうのマシンが ident デーモンを動かしていれば可能だが、この文書の範囲外だ。詳細は [flrfc[RFC 1413|1413]] を参照。）
 
 
-## `gethostname()`---Who am I?
+## `gethostname()`——俺は誰？
 
-[i[`gethostname()` function]] Even easier than `getpeername()` is the
-function `gethostname()`. It returns the name of the computer that your
-program is running on. The name can then be used by [i[`getaddrinfo()`
-function]] `getaddrinfo()`, above, to determine the [i[IP address]] IP
-address of your local machine.
+[i[`gethostname()` function]] `getpeername()` よりさらに簡単なのが `gethostname()` だ。プログラムが動いているコンピュータの名前を返す。その名前を上の [i[`getaddrinfo()`
+function]] `getaddrinfo()` に渡せば、ローカルマシンの [i[IP address]] IP アドレスがわかる。
 
-What could be more fun? I could think of a few things, but they don't
-pertain to socket programming. Anyway, here's the breakdown:
+他に何が楽しい？ いくつか思い浮かぶが、ソケットプログラミングとは関係ない。とにかく概要：
 
 ```{.c}
 #include <unistd.h>
@@ -875,9 +608,6 @@ pertain to socket programming. Anyway, here's the breakdown:
 int gethostname(char *hostname, size_t size); 
 ```
 
-The arguments are simple: `hostname` is a pointer to an array of chars that will
-contain the hostname upon the function's return, and `size` is the length in
-bytes of the `hostname` array.
+引数はシンプル：`hostname` は関数が返るときにホスト名を入れる char 配列へのポインタ。`size` は `hostname` 配列のバイト長。
 
-The function returns `0` on successful completion, and `-1` on error, setting
-`errno` as usual.
+成功で `0`、エラーで `-1`、いつものように `errno` をセット。

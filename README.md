@@ -1,105 +1,48 @@
-# Beej's Guide to Network Programming
+# Beej's Guide to Network Programming（日本語版）
 
-This is the source for Beej's Guide to Network Programming.
+[Beej's Guide to Network Programming](https://beej.us/guide/bgnet/) の非公式日本語訳です。
 
-If you merely wish to read the guide, please visit the [Beej's Guide to
-Network Programming](https://beej.us/guide/bgnet/) website.
+- **公開サイト**: https://sashi0034.github.io/bgnet-ja/
+- **原文**: https://beej.us/guide/bgnet/
+- **原文ソース**: https://github.com/beejjorgensen/bgnet
+- **著者**: Brian “Beej Jorgensen” Hall
 
-This is here so that Beej has everything in a repo and so translators
-can easily clone it.
+ライセンスは Creative Commons Attribution-NonCommercial-NoDerivatives 3.0 です（翻訳はライセンス上許可されています）。C のサンプルコードはパブリックドメインです。
 
-## Build Instructions
+## 読む
 
-### Dependencies
+ビルド済みの HTML は GitHub Pages で公開しています。分割 HTML がおすすめです。
 
-* [Gnu make](https://www.gnu.org/software/make/) (XCode make works, too)
-* [Python 3+](https://www.python.org/)
-* [Pandoc 2.7.3+](https://pandoc.org/)
-* XeLaTeX (can be found in [TeX Live](https://www.tug.org/texlive/))
-* [Liberation fonts](https://en.wikipedia.org/wiki/Liberation_fonts) (sans, serif, mono)
+## ビルド（HTML のみ）
 
-Mac dependencies install (reopen terminal after doing this):
+依存:
 
-```
-xcode-select --install                  # installs make
-brew install python                     # installs Python3
-brew install pandoc
-brew install mactex                     # installs XeLaTeX
-brew tap homebrew/cask-fonts
-brew install font-liberation            # installs Liberation fonts
-```
+- [Gnu make](https://www.gnu.org/software/make/)
+- [Python 3+](https://www.python.org/)
+- [Pandoc 2.7.3+](https://pandoc.org/)
+- ビルドシステム [bgbspd](https://github.com/beejjorgensen/bgbspd)（このリポジトリの sibling として clone）
 
-You might have to add something like this to your path to find `xelatex`:
-
-```
-PATH=$PATH:/usr/local/texlive/2021/bin/universal-darwin
+```text
+parent/
+  bgnet-ja/     # このリポジトリ
+  bgbspd/       # https://github.com/beejjorgensen/bgbspd
 ```
 
-### Dependency: Build System
-
-This depends on an external repo to build: [Beej's Guide Build System
-for Pandoc](https://github.com/beejjorgensen/bgbspd).
-
-You'll want to clone that repo as a sibling to this one:
-
-```
-mystuff-->bggit
-      \-->bgbspd
+```bash
+# Linux / macOS / Git Bash など
+export BGBSPD_BUILD_DIR=../bgbspd
+./scripts/build-html-stage.sh
+# → _site/ に GitHub Pages 向け HTML が出力されます
 ```
 
-The Makefiles here will look for the build system there.
+PDF を含むフルビルドが必要な場合は、原文 README と同様に `make all` / `make stage`（XeLaTeX が必要）または Docker を使ってください。本フォークの公開対象は HTML のみです。
 
-You can override the `bgbspd` directory before running `make` like this:
+## 翻訳について
 
-```
-export BGBSPD_BUILD_DIR=/some/path/to/bgbspd
-```
+本文のソースは `src/bgnet_part_*.md` です。和訳するときは Beej 独自の Markdown 拡張（`[i[...]]`、`[fl[...]]`、`{#anchor}` など）を壊さないでください。詳細は `src/README.md` を参照。
 
-### Build
+## GitHub Pages
 
-1. Type `make all` from the top-level directory.
+`main` への push で `.github/workflows/pages.yml` が HTML をビルドし、GitHub Pages にデプロイします。
 
-   If you have Gnu Make, it should work fine.  Other makes might work as
-   well.  Windows users might want to check out Cygwin.
-
-2. Type `make stage` to copy all the build products and website to the
-   `stage` directory.
-
-3. There is no step three.
-
-You can also `cd` to the `src` directory and `make`.
-
-`make clean` cleans, and `make pristine` cleans to "original" state.
-
-To embed your own fonts in the PDFs, see the `src/Makefile` for examples.
-
-The `upload` target in the root `Makefile` demonstrates the build steps
-for a complete release.  You'll need to change the `UPLOADDIR` macro in
-the top-level `Makefile` to point to your host if you want to use that.
-You're free to upload whatever versions you desire individually, as
-well.
-
-### Build via Docker
-
-If you don't want to mess with a local setup, you can build via Docker.
-
-1. Run `docker build -t beej-bgnet-builder .` from the top-level directory.
-
-2. Run `docker run --rm -v "$PWD":/guide -ti beej-bgnet-builder`.
-
-   This will mount the project where the image expects it, and run `make
-   pristine all stage`, leaving your `./stage` directory ready to be published.
-
-## Pull Requests
-
-Please keep these on the scale of typo and bug fixes. That way I don't
-have to consider any copyright issues when merging changes.
-
-## TODO
-
-### Content
-
-* File transfer example maybe in son of data encapsulation
-* Multicast?
-* Event IO?
-
+リポジトリ設定で **Settings → Pages → Source = GitHub Actions** を有効にしてください。
